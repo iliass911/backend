@@ -1,0 +1,37 @@
+package com.example.backend.domain.inventory.mapper;
+
+import com.example.backend.domain.inventory.dto.InventoryItemDTO;
+import com.example.backend.domain.inventory.entity.InventoryItem;
+
+public class InventoryItemMapper {
+
+    public static InventoryItemDTO toDTO(InventoryItem entity) {
+        if (entity == null) return null;
+        InventoryItemDTO dto = new InventoryItemDTO();
+        dto.setId(entity.getId());
+        dto.setRefCode(entity.getRefCode());
+        dto.setSite(entity.getSite());
+        dto.setType(entity.getType());
+        dto.setQuantity(entity.getQuantity());
+        dto.setPlace(entity.getPlace());
+        dto.setUnit(entity.getUnit());
+        dto.setPrice(entity.getPrice());
+        // Compute totalPrice from entity method
+        dto.setTotalPrice(entity.getTotalPrice());
+        return dto;
+    }
+
+    public static InventoryItem toEntity(InventoryItemDTO dto) {
+        if (dto == null) return null;
+        return InventoryItem.builder()
+                .id(dto.getId())
+                .refCode(dto.getRefCode())
+                .site(dto.getSite())
+                .type(dto.getType())
+                .quantity(dto.getQuantity())
+                .place(dto.getPlace())
+                .unit(dto.getUnit())
+                .price(dto.getPrice())
+                .build();
+    }
+}
