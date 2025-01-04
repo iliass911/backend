@@ -1,7 +1,9 @@
 package com.example.backend.domain.bom.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
+import jakarta.persistence.*; // Updated import
+// import javax.persistence.*; // Remove or comment out if present
+import com.example.backend.domain.bom.entity.BomLine;
 
 @Entity
 @Table(name = "bom_line_units")
@@ -10,27 +12,19 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = "bomLine")
 public class BomLineUnit {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bom_line_id", nullable = false)
     private BomLine bomLine;
 
-    @Column(nullable = false)
-    private String unitName;
-
-    @Column(nullable = false)
+    @Column(name = "unit_index", nullable = false)
     private Integer unitIndex;
 
-    @PrePersist
-    @PreUpdate
-    private void validateUnitName() {
-        if (unitName == null || unitName.trim().isEmpty()) {
-            unitName = "Unit " + unitIndex;
-        }
-    }
+    @Column(name = "unit_name", nullable = false)
+    private String unitName;
 }

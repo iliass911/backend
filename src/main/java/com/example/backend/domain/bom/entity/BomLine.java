@@ -3,8 +3,11 @@ package com.example.backend.domain.bom.entity;
 import com.example.backend.domain.inventory.entity.InventoryItem;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "bom_lines")
@@ -13,41 +16,44 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"bom", "inventoryItem", "units"})
 public class BomLine {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // Link to the BOM
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bom_id", nullable = false)
     private Bom bom;
 
+    // If referencing an InventoryItem
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_item_id")
     private InventoryItem inventoryItem;
 
+    // Category (holder 2d, holder 3d, em, etc.)
     @Column(nullable = false)
     private String category;
 
+    // Name/description of the component
     @Column(nullable = false)
     private String componentName;
 
+    // Unit price retrieved from the Inventory item or set manually
     private Double unitPrice;
 
+    // Chosen quantity for this board
     private Integer quantity;
 
+    // Computed cost = unitPrice * quantity
     private Double lineCost;
 
-    @OneToMany(
-        mappedBy = "bomLine",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true,
-        fetch = FetchType.LAZY
-    )
-    @OrderBy("unitIndex ASC")
+    // One-to-Many relationship with BomLineUnit
+    @OneToMany(mappedBy = "bomLine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("unitIndex")
     private List<BomLineUnit> units = new ArrayList<>();
 
+    // Helper method to calculate lineCost before persisting or updating
     @PrePersist
     @PreUpdate
     private void calculateLineCost() {
@@ -58,23 +64,29 @@ public class BomLine {
         }
     }
 
-    public void setUnits(List<BomLineUnit> units) {
-        this.units.clear();
-        if (units != null) {
-            units.forEach(unit -> {
-                unit.setBomLine(this);
-                this.units.add(unit);
-            });
+    // Helper method to manage unit names
+    public void setUnitNames(List<String> unitNames) {
+        units.clear();
+        if (unitNames != null) {
+            for (int i = 0; i < unitNames.size(); i++) {
+                String unitName = unitNames.get(i);
+                if (unitName != null && !unitName.trim().isEmpty()) {
+                    BomLineUnit unit = BomLineUnit.builder()
+                            .bomLine(this)
+                            .unitIndex(i)
+                            .unitName(unitName)
+                            .build();
+                    units.add(unit);
+                }
+            }
         }
     }
 
-    public void addUnit(BomLineUnit unit) {
-        units.add(unit);
-        unit.setBomLine(this);
-    }
-
-    public void removeUnit(BomLineUnit unit) {
-        units.remove(unit);
-        unit.setBomLine(null);
+    // Helper method to retrieve unit names
+    public List<String> getUnitNames() {
+        return units.stream()
+                .sorted(Comparator.comparing(BomLineUnit::getUnitIndex))
+                .map(BomLineUnit::getUnitName)
+                .collect(Collectors.toList());
     }
 }

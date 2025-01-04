@@ -1,192 +1,270 @@
-// src/main/java/com/example/backend/domain/preventive_maintenance/service/BoardServiceImpl.java
-
 package com.example.backend.domain.preventive_maintenance.service;
 
 import com.example.backend.domain.preventive_maintenance.dto.BoardDTO;
 import com.example.backend.domain.preventive_maintenance.entity.Board;
 import com.example.backend.domain.preventive_maintenance.entity.Pack;
+import com.example.backend.domain.user.entity.User;  // Correct import for User
 import com.example.backend.domain.preventive_maintenance.mapper.BoardMapper;
 import com.example.backend.domain.preventive_maintenance.repository.BoardRepository;
 import com.example.backend.domain.preventive_maintenance.repository.PackRepository;
-import com.example.backend.domain.user.entity.User;
-import com.example.backend.domain.user.repository.UserRepository;
+import com.example.backend.domain.user.repository.UserRepository;  // Correct import for UserRepository
 import com.example.backend.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of the BoardService interface.
- */
 @Service
-@RequiredArgsConstructor
-@Transactional
 public class BoardServiceImpl implements BoardService {
+    // Rest of the implementation remains the same...
 
-    private final BoardRepository boardRepository;
-    private final PackRepository packRepository;
-    private final UserRepository userRepository;
-    private final BoardMapper boardMapper;
+    @Autowired
+    private BoardRepository boardRepository;
+
+    @Autowired
+    private BoardMapper boardMapper;
+
+    // >>> Added these two for handling Pack and User relationships <<<
+    @Autowired
+    private PackRepository packRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public List<BoardDTO> getAllBoards() {
-        return boardRepository.findAll().stream()
-                .map(boardMapper::toDTO)
-                .collect(Collectors.toList());
+        try {
+            System.out.println("Fetching all boards from the repository.");
+            List<Board> boards = boardRepository.findAll();
+            List<BoardDTO> boardDTOs = boards.stream()
+                    .map(boardMapper::toDTO)
+                    .collect(Collectors.toList());
+            System.out.println("Fetched " + boardDTOs.size() + " boards.");
+            return boardDTOs;
+        } catch (Exception e) {
+            System.out.println("Error in getAllBoards: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BoardDTO getBoardById(Long id) {
-        Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
-        return boardMapper.toDTO(board);
+        try {
+            System.out.println("Fetching board with id: " + id);
+            Board board = boardRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
+            BoardDTO boardDTO = boardMapper.toDTO(board);
+            System.out.println("Fetched board: " + boardDTO);
+            return boardDTO;
+        } catch (ResourceNotFoundException e) {
+            System.out.println("Board not found: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.out.println("Error in getBoardById: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
     public BoardDTO createBoard(BoardDTO boardDTO) {
-        Board board = boardMapper.toEntity(boardDTO);
+        try {
+            // Log incoming DTO
+            System.out.println("Creating board with data: " + boardDTO);
 
-        // Handle Pack relationship
-        if (boardDTO.getPackId() != null) {
-            Pack pack = packRepository.findById(boardDTO.getPackId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Pack not found with id: " + boardDTO.getPackId()));
-            board.setPack(pack);
+            // Check for duplicate boardNumber
+            if (boardRepository.existsByBoardNumber(boardDTO.getBoardNumber())) {
+                System.out.println("Duplicate board number detected: " + boardDTO.getBoardNumber());
+                throw new IllegalArgumentException("Board number already exists: " + boardDTO.getBoardNumber());
+            }
+
+            // Map to entity
+            Board board = boardMapper.toEntity(boardDTO);
+            System.out.println("Mapped to entity: " + board);
+
+            // Save entity
+            Board savedBoard = boardRepository.save(board);
+            System.out.println("Saved board: " + savedBoard);
+
+            // Map back to DTO
+            BoardDTO result = boardMapper.toDTO(savedBoard);
+            System.out.println("Returning DTO: " + result);
+
+            return result;
+        } catch (IllegalArgumentException e) {
+            System.out.println("Validation error in createBoard: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.out.println("Error in createBoard: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-
-        // Handle User relationship
-        if (boardDTO.getAssignedUserId() != null) {
-            User user = userRepository.findById(boardDTO.getAssignedUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + boardDTO.getAssignedUserId()));
-            board.setAssignedUser(user);
-        }
-
-        // Explicitly set all fields from DTO to ensure completeness
-        board.setFbName(boardDTO.getFbName());
-        board.setFbSize(boardDTO.getFbSize());
-        board.setFirstTechLevel(boardDTO.getFirstTechLevel());
-        board.setProjet(boardDTO.getProjet());
-        board.setPlant(boardDTO.getPlant());
-        board.setStoragePlace(boardDTO.getStoragePlace());
-        board.setInUse(boardDTO.getInUse());
-        board.setTestClip(boardDTO.getTestClip());
-        board.setArea(boardDTO.getArea());
-        board.setFbType1(boardDTO.getFbType1());
-        board.setFbType2(boardDTO.getFbType2());
-        board.setFbType3(boardDTO.getFbType3());
-        board.setSide(boardDTO.getSide());
-        board.setDerivate(boardDTO.getDerivate());
-        board.setCreationReason(boardDTO.getCreationReason());
-        board.setFirstYellowReleaseDate(boardDTO.getFirstYellowReleaseDate());
-        board.setFirstOrangeReleaseDate(boardDTO.getFirstOrangeReleaseDate());
-        board.setFirstGreenReleaseDate(boardDTO.getFirstGreenReleaseDate());
-        board.setFirstUseByProdDate(boardDTO.getFirstUseByProdDate());
-        board.setCurrentTechLevel(boardDTO.getCurrentTechLevel());
-        board.setNextTechLevel(boardDTO.getNextTechLevel());
-        board.setLastTechChangeImplemented(boardDTO.getLastTechChangeImplemented());
-        board.setLastTechChangeImpleDate(boardDTO.getLastTechChangeImpleDate());
-        board.setLastTechChangeReleaseDate(boardDTO.getLastTechChangeReleaseDate());
-        board.setComment1(boardDTO.getComment1());
-        board.setComment2(boardDTO.getComment2());
-        board.setComment3(boardDTO.getComment3());
-        board.setCost(boardDTO.getCost());
-        board.setQuantity(boardDTO.getQuantity());
-        board.setFbId(boardDTO.getFbId());
-
-        Board savedBoard = boardRepository.save(board);
-        return boardMapper.toDTO(savedBoard);
     }
 
+    /**
+     * Updates an existing Board entity by merging changes from a BoardDTO,
+     * and also manages the Pack and User relationships if present.
+     */
     @Override
+    @Transactional
     public BoardDTO updateBoard(Long id, BoardDTO boardDTO) {
-        Board existingBoard = boardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
+        try {
+            System.out.println("Updating board with id: " + id + " and data: " + boardDTO);
 
-        // Update Pack relationship
-        if (boardDTO.getPackId() != null) {
-            Pack pack = packRepository.findById(boardDTO.getPackId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Pack not found with id: " + boardDTO.getPackId()));
-            existingBoard.setPack(pack);
-        } else {
-            existingBoard.setPack(null);
+            // Retrieve existing board
+            Board existingBoard = boardRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
+
+            // Update the entity using mapper while preserving certain fields
+            boardMapper.updateEntityFromDto(boardDTO, existingBoard);
+
+            // Handle pack relationship
+            if (boardDTO.getPackId() != null) {
+                Pack pack = packRepository.findById(boardDTO.getPackId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Pack not found with id: " + boardDTO.getPackId()));
+                existingBoard.setPack(pack);
+            } else {
+                existingBoard.setPack(null);
+            }
+
+            // Handle user relationship
+            if (boardDTO.getAssignedUserId() != null) {
+                User user = userRepository.findById(boardDTO.getAssignedUserId())
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + boardDTO.getAssignedUserId()));
+                existingBoard.setAssignedUser(user);
+            } else {
+                existingBoard.setAssignedUser(null);
+            }
+
+            // Save the updated board
+            Board savedBoard = boardRepository.save(existingBoard);
+            System.out.println("Saved board with pack: " + savedBoard.getPack());
+
+            // Map back to DTO
+            BoardDTO result = boardMapper.toDTO(savedBoard);
+            System.out.println("Returning updated DTO with pack_id: " + result.getPackId());
+
+            return result;
+        } catch (ResourceNotFoundException e) {
+            System.out.println("Resource not found during update: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.out.println("Error in updateBoard: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-
-        // Update User relationship
-        if (boardDTO.getAssignedUserId() != null) {
-            User user = userRepository.findById(boardDTO.getAssignedUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + boardDTO.getAssignedUserId()));
-            existingBoard.setAssignedUser(user);
-        } else {
-            existingBoard.setAssignedUser(null);
-        }
-
-        // Explicitly update all fields from DTO to ensure consistency
-        existingBoard.setFbName(boardDTO.getFbName());
-        existingBoard.setFbSize(boardDTO.getFbSize());
-        existingBoard.setFirstTechLevel(boardDTO.getFirstTechLevel());
-        existingBoard.setProjet(boardDTO.getProjet());
-        existingBoard.setPlant(boardDTO.getPlant());
-        existingBoard.setStoragePlace(boardDTO.getStoragePlace());
-        existingBoard.setInUse(boardDTO.getInUse());
-        existingBoard.setTestClip(boardDTO.getTestClip());
-        existingBoard.setArea(boardDTO.getArea());
-        existingBoard.setFbType1(boardDTO.getFbType1());
-        existingBoard.setFbType2(boardDTO.getFbType2());
-        existingBoard.setFbType3(boardDTO.getFbType3());
-        existingBoard.setSide(boardDTO.getSide());
-        existingBoard.setDerivate(boardDTO.getDerivate());
-        existingBoard.setCreationReason(boardDTO.getCreationReason());
-        existingBoard.setFirstYellowReleaseDate(boardDTO.getFirstYellowReleaseDate());
-        existingBoard.setFirstOrangeReleaseDate(boardDTO.getFirstOrangeReleaseDate());
-        existingBoard.setFirstGreenReleaseDate(boardDTO.getFirstGreenReleaseDate());
-        existingBoard.setFirstUseByProdDate(boardDTO.getFirstUseByProdDate());
-        existingBoard.setCurrentTechLevel(boardDTO.getCurrentTechLevel());
-        existingBoard.setNextTechLevel(boardDTO.getNextTechLevel());
-        existingBoard.setLastTechChangeImplemented(boardDTO.getLastTechChangeImplemented());
-        existingBoard.setLastTechChangeImpleDate(boardDTO.getLastTechChangeImpleDate());
-        existingBoard.setLastTechChangeReleaseDate(boardDTO.getLastTechChangeReleaseDate());
-        existingBoard.setComment1(boardDTO.getComment1());
-        existingBoard.setComment2(boardDTO.getComment2());
-        existingBoard.setComment3(boardDTO.getComment3());
-        existingBoard.setCost(boardDTO.getCost());
-        existingBoard.setQuantity(boardDTO.getQuantity());
-        existingBoard.setFbId(boardDTO.getFbId());
-
-        Board updatedBoard = boardRepository.save(existingBoard);
-        return boardMapper.toDTO(updatedBoard);
     }
 
     @Override
     public void deleteBoard(Long id) {
-        Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
-
-        // Clear relationships before deleting
-        board.setPack(null);
-        board.setAssignedUser(null);
-
-        boardRepository.delete(board);
+        try {
+            System.out.println("Deleting board with id: " + id);
+            Board existingBoard = boardRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + id));
+            boardRepository.delete(existingBoard);
+            System.out.println("Successfully deleted board with id: " + id);
+        } catch (ResourceNotFoundException e) {
+            System.out.println("Board not found during deletion: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.out.println("Error in deleteBoard: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> getDistinctProjets() {
-        return boardRepository.findDistinctProjets();
+        try {
+            System.out.println("Fetching distinct projets.");
+            List<String> projets = boardRepository.findDistinctProjets();
+            System.out.println("Fetched " + projets.size() + " distinct projets.");
+            return projets;
+        } catch (Exception e) {
+            System.out.println("Error in getDistinctProjets: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> getDistinctPlants() {
-        return boardRepository.findDistinctPlants();
+        try {
+            System.out.println("Fetching distinct plants.");
+            List<String> plants = boardRepository.findDistinctPlants();
+            System.out.println("Fetched " + plants.size() + " distinct plants.");
+            return plants;
+        } catch (Exception e) {
+            System.out.println("Error in getDistinctPlants: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<String> getDistinctFbType1() {
-        return boardRepository.findDistinctFbType1();
+        try {
+            System.out.println("Fetching distinct fbType1 values.");
+            List<String> fbTypes1 = boardRepository.findDistinctFbType1();
+            System.out.println("Fetched " + fbTypes1.size() + " distinct fbType1 values.");
+            return fbTypes1;
+        } catch (Exception e) {
+            System.out.println("Error in getDistinctFbType1: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * Creates multiple Board entities in bulk based on the provided DTOs.
+     *
+     * @param boardDTOs The list of BoardDTOs containing Board details.
+     * @return List of BoardDTOs representing the created Boards.
+     * @throws IllegalArgumentException if duplicate board numbers are found.
+     * @throws RuntimeException         if any board fails to process.
+     */
+    @Override
+    @Transactional
+    public List<BoardDTO> createBulkBoards(List<BoardDTO> boardDTOs) {
+        List<BoardDTO> createdBoards = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        // Validate board numbers for duplicates within the provided list
+        Set<String> newBoardNumbers = boardDTOs.stream()
+                .map(BoardDTO::getBoardNumber)
+                .collect(Collectors.toSet());
+
+        if (newBoardNumbers.size() < boardDTOs.size()) {
+            throw new IllegalArgumentException("Duplicate board numbers found in bulk upload");
+        }
+
+        // Check for existing board numbers in the database
+        for (String boardNumber : newBoardNumbers) {
+            if (boardRepository.existsByBoardNumber(boardNumber)) {
+                errors.add("Board number already exists: " + boardNumber);
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException("Validation errors: " + String.join(", ", errors));
+        }
+
+        // Process all boards
+        for (BoardDTO boardDTO : boardDTOs) {
+            try {
+                Board board = boardMapper.toEntity(boardDTO);
+                Board savedBoard = boardRepository.save(board);
+                createdBoards.add(boardMapper.toDTO(savedBoard));
+            } catch (Exception e) {
+                throw new RuntimeException("Error processing board: " + boardDTO.getBoardNumber(), e);
+            }
+        }
+
+        return createdBoards;
     }
 }

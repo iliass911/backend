@@ -1,9 +1,6 @@
-// src/main/java/com/example/backend/domain/preventive_maintenance/service/BoardService.java
-
 package com.example.backend.domain.preventive_maintenance.service;
 
 import com.example.backend.domain.preventive_maintenance.dto.BoardDTO;
-
 import java.util.List;
 
 /**
@@ -42,7 +39,7 @@ public interface BoardService {
      * @param id       The ID of the Board to update.
      * @param boardDTO The BoardDTO containing updated Board details.
      * @return BoardDTO representing the updated Board.
-     * @throws ResourceNotFoundException if the Board, Pack, or User is not found.
+     * @throws ResourceNotFoundException if the Board is not found.
      */
     BoardDTO updateBoard(Long id, BoardDTO boardDTO);
 
@@ -74,4 +71,13 @@ public interface BoardService {
      * @return List of distinct FbType1 values.
      */
     List<String> getDistinctFbType1();
+
+    /**
+     * Creates multiple Board entities in bulk based on the provided DTOs.
+     *
+     * @param boardDTOs The list of BoardDTOs containing Board details.
+     * @return List of BoardDTOs representing the created Boards.
+     * @throws ResourceNotFoundException if associated resources are not found.
+     */
+    List<BoardDTO> createBulkBoards(List<BoardDTO> boardDTOs);
 }

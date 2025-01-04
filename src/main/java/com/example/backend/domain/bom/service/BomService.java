@@ -4,7 +4,6 @@ import com.example.backend.domain.bom.dto.BomDTO;
 import com.example.backend.domain.bom.dto.BomLineDTO;
 import com.example.backend.domain.bom.entity.Bom;
 import com.example.backend.domain.bom.entity.BomLine;
-import com.example.backend.domain.bom.entity.BomLineUnit;
 import com.example.backend.domain.bom.mapper.BomMapper;
 import com.example.backend.domain.bom.repository.BomRepository;
 import com.example.backend.domain.bom.repository.BomLineRepository;
@@ -17,19 +16,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class BomService {
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     private final BomRepository bomRepository;
     private final BomLineRepository bomLineRepository;
@@ -37,133 +30,160 @@ public class BomService {
     private final InventoryItemRepository inventoryItemRepository;
     private final BomMapper bomMapper;
 
-    @Transactional
+    /**
+     * Create or link a BOM to a board.
+     */
     public BomDTO createBom(Long boardId) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
 
+        // Check if BOM already exists for the Board using the repository method
         if (bomRepository.findByBoardId(boardId).isPresent()) {
             throw new IllegalArgumentException("BOM already exists for this Board.");
         }
 
+        // Create a new BOM
         Bom bom = Bom.builder()
                 .board(board)
                 .totalCost(0.0)
                 .bomLines(new HashSet<>())
                 .build();
-
         Bom saved = bomRepository.save(bom);
-        entityManager.flush();
-        entityManager.refresh(saved);
-        
         return bomMapper.toDTO(saved);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get BOM by Board ID
+     */
     public BomDTO getBomByBoardId(Long boardId) {
         Bom bom = bomRepository.findByBoardId(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found for board id: " + boardId));
         return bomMapper.toDTO(bom);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Retrieve a BOM by ID.
+     */
     public BomDTO getBom(Long bomId) {
         Bom bom = bomRepository.findById(bomId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found with id: " + bomId));
         return bomMapper.toDTO(bom);
     }
 
+    /**
+     * Add or update BOM lines for a given BOM, including handling unit names and String IDs.
+     */
     @Transactional
     public BomDTO addOrUpdateBomLines(Long bomId, Set<BomLineDTO> bomLineDTOs) {
-        System.out.println("Starting BOM update process...");
-        
         Bom bom = bomRepository.findById(bomId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found with id: " + bomId));
 
         // Clear existing lines
-        if (bom.getBomLines() != null) {
-            for (BomLine line : new HashSet<>(bom.getBomLines())) {
-                entityManager.remove(line);
-            }
+        if (bom.getBomLines() != null && !bom.getBomLines().isEmpty()) {
+            bom.getBomLines().forEach(line -> {
+                line.setBom(null);
+                if (line.getUnits() != null) {
+                    line.getUnits().forEach(unit -> unit.setBomLine(null));
+                }
+            });
             bom.getBomLines().clear();
-            entityManager.flush();
+            bomRepository.save(bom);  // Save the cleared state
         }
 
-        // Reset total cost
-        double totalCost = 0.0;
+        // Initialize new collection if null
+        if (bom.getBomLines() == null) {
+            bom.setBomLines(new HashSet<>());
+        }
 
-        // Process new lines
+        double totalCost = 0.0;
+        Set<BomLine> newLines = new HashSet<>();
+
         for (BomLineDTO lineDto : bomLineDTOs) {
-            BomLine line = new BomLine();
+            BomLine line;
+
+            // If it's not a temporary ID, try to find existing line
+            if (!lineDto.isTemporary() && lineDto.getId() != null) {
+                try {
+                    Long lineId = Long.parseLong(lineDto.getId());
+                    line = bomLineRepository.findById(lineId)
+                            .orElse(new BomLine());
+                } catch (NumberFormatException e) {
+                    // If ID is not a valid Long, treat it as a new line
+                    line = new BomLine();
+                }
+            } else {
+                line = new BomLine();
+            }
+
             line.setBom(bom);
 
-            // Set basic properties
+            // Handle inventory item
             if (lineDto.getInventoryItemId() != null) {
                 InventoryItem item = inventoryItemRepository.findById(lineDto.getInventoryItemId())
-                        .orElseThrow(() -> new ResourceNotFoundException("InventoryItem not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("InventoryItem not found with id: " + lineDto.getInventoryItemId()));
                 line.setInventoryItem(item);
                 line.setUnitPrice(item.getPrice());
                 line.setComponentName(item.getRefCode());
             } else {
+                // Manually set price or from BOMLineDTO
                 line.setUnitPrice(lineDto.getUnitPrice());
                 line.setComponentName(lineDto.getComponentName());
             }
 
+            // Set category
             line.setCategory(lineDto.getCategory());
+
+            // Set quantity (with null check)
             line.setQuantity(lineDto.getQuantity() != null ? lineDto.getQuantity() : 1);
 
-            // Calculate line cost
-            double lineCost = line.getUnitPrice() * line.getQuantity();
-            line.setLineCost(lineCost);
-            totalCost += lineCost;
-
-            // Process unit names
-            List<String> unitNames = lineDto.getUnitNames();
-            if (unitNames == null || unitNames.isEmpty()) {
-                unitNames = new ArrayList<>();
-                for (int i = 0; i < line.getQuantity(); i++) {
-                    unitNames.add("Unit " + (i + 1));
-                }
+            // Calculate line cost (with null checks)
+            if (line.getUnitPrice() != null && line.getQuantity() != null) {
+                line.setLineCost(line.getUnitPrice() * line.getQuantity());
+                totalCost += line.getLineCost();
+            } else {
+                line.setLineCost(0.0);
             }
 
-            // Create units
-            List<BomLineUnit> units = new ArrayList<>();
-            for (int i = 0; i < unitNames.size(); i++) {
-                BomLineUnit unit = BomLineUnit.builder()
-                        .bomLine(line)
-                        .unitName(unitNames.get(i))
-                        .unitIndex(i + 1)
-                        .build();
-                units.add(unit);
+            // Handle unit names
+            if (lineDto.getUnitNames() != null) {
+                line.setUnitNames(lineDto.getUnitNames());
             }
-            line.setUnits(units);
 
-            // Persist the line
-            entityManager.persist(line);
-            bom.getBomLines().add(line);
+            newLines.add(line);
+            bom.getBomLines().add(line);  // Add to both collections
         }
 
+        // Update the BOM's total cost
         bom.setTotalCost(totalCost);
-        
-        // Save and refresh
-        Bom savedBom = bomRepository.save(bom);
-        entityManager.flush();
-        entityManager.refresh(savedBom);
 
-        // Load all units eagerly for verification
-        for (BomLine line : savedBom.getBomLines()) {
-            line.getUnits().size(); // Force load
-        }
+        // Save BOM which will cascade to lines due to CascadeType.ALL
+        Bom savedBom = bomRepository.save(bom);
+
+        // Clear persistence context to avoid stale data
+        bomRepository.flush();
 
         return bomMapper.toDTO(savedBom);
     }
 
+    /**
+     * Delete a BOM entirely.
+     */
     @Transactional
     public void deleteBom(Long bomId) {
         Bom bom = bomRepository.findById(bomId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found with id: " + bomId));
 
+        // Clear associations first
+        if (bom.getBomLines() != null && !bom.getBomLines().isEmpty()) {
+            bom.getBomLines().forEach(line -> {
+                line.setBom(null);
+                if (line.getUnits() != null) {
+                    line.getUnits().forEach(unit -> unit.setBomLine(null));
+                }
+            });
+            bom.getBomLines().clear();
+        }
+
         bomRepository.delete(bom);
-        entityManager.flush();
     }
 }

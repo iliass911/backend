@@ -26,29 +26,9 @@ public class Bom {
     private Board board;
 
     // BOM lines referencing Inventory Items
-    @OneToMany(mappedBy = "bom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "bom", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BomLine> bomLines = new HashSet<>();
 
     // Stores the total cost of the BOM (calculated from lines)
     private Double totalCost;
-
-    /**
-     * Adds a BomLine to this Bom and sets the relationship.
-     *
-     * @param bomLine the BomLine to add
-     */
-    public void addBomLine(BomLine bomLine) {
-        bomLines.add(bomLine);
-        bomLine.setBom(this);
-    }
-
-    /**
-     * Removes a BomLine from this Bom and clears the relationship.
-     *
-     * @param bomLine the BomLine to remove
-     */
-    public void removeBomLine(BomLine bomLine) {
-        bomLines.remove(bomLine);
-        bomLine.setBom(null);
-    }
 }

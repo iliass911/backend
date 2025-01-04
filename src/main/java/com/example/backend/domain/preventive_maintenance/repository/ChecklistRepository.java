@@ -1,14 +1,16 @@
 package com.example.backend.domain.preventive_maintenance.repository;
 
 import com.example.backend.domain.preventive_maintenance.entity.Checklist;
+import com.example.backend.domain.preventive_maintenance.entity.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChecklistRepository extends JpaRepository<Checklist, Long> {
     List<Checklist> findByBoardId(Long boardId);
-    
-    // Additional query methods (if needed) can be defined here
+
+    Optional<Checklist> findTopByBoardOrderByValidationDateDesc(Board board);
 }
