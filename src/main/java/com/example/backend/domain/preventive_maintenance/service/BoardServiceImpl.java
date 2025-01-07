@@ -15,20 +15,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class BoardServiceImpl implements BoardService {
-    // Rest of the implementation remains the same...
-
+    
+    // Autowired repositories and mappers
     @Autowired
     private BoardRepository boardRepository;
 
     @Autowired
     private BoardMapper boardMapper;
 
-    // >>> Added these two for handling Pack and User relationships <<<
+    // Repositories for handling Pack and User relationships
     @Autowired
     private PackRepository packRepository;
 
@@ -77,15 +76,25 @@ public class BoardServiceImpl implements BoardService {
             // Log incoming DTO
             System.out.println("Creating board with data: " + boardDTO);
 
-            // Check for duplicate boardNumber
-            if (boardRepository.existsByBoardNumber(boardDTO.getBoardNumber())) {
-                System.out.println("Duplicate board number detected: " + boardDTO.getBoardNumber());
-                throw new IllegalArgumentException("Board number already exists: " + boardDTO.getBoardNumber());
-            }
-
             // Map to entity
             Board board = boardMapper.toEntity(boardDTO);
             System.out.println("Mapped to entity: " + board);
+
+            // Handle Pack relationship
+            if (boardDTO.getPackId() != null) {
+                Pack pack = packRepository.findById(boardDTO.getPackId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Pack not found with id: " + boardDTO.getPackId()));
+                board.setPack(pack);
+            }
+
+            // Handle User relationship
+            if (boardDTO.getAssignedUserId() != null) {
+                User user = userRepository.findById(boardDTO.getAssignedUserId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "User not found with id: " + boardDTO.getAssignedUserId()));
+                board.setAssignedUser(user);
+            }
 
             // Save entity
             Board savedBoard = boardRepository.save(board);
@@ -96,9 +105,6 @@ public class BoardServiceImpl implements BoardService {
             System.out.println("Returning DTO: " + result);
 
             return result;
-        } catch (IllegalArgumentException e) {
-            System.out.println("Validation error in createBoard: " + e.getMessage());
-            throw e;
         } catch (Exception e) {
             System.out.println("Error in createBoard: " + e.getMessage());
             e.printStackTrace();
@@ -225,8 +231,7 @@ public class BoardServiceImpl implements BoardService {
      *
      * @param boardDTOs The list of BoardDTOs containing Board details.
      * @return List of BoardDTOs representing the created Boards.
-     * @throws IllegalArgumentException if duplicate board numbers are found.
-     * @throws RuntimeException         if any board fails to process.
+     * @throws RuntimeException if any board fails to process.
      */
     @Override
     @Transactional
@@ -234,35 +239,61 @@ public class BoardServiceImpl implements BoardService {
         List<BoardDTO> createdBoards = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
-        // Validate board numbers for duplicates within the provided list
-        Set<String> newBoardNumbers = boardDTOs.stream()
-                .map(BoardDTO::getBoardNumber)
-                .collect(Collectors.toSet());
+        // Process all boards
+        for (BoardDTO boardDTO : boardDTOs) {
+            try {
+                // Map DTO to entity
+                Board board = boardMapper.toEntity(boardDTO);
+                System.out.println("Mapped BoardDTO to Board entity: " + board);
 
-        if (newBoardNumbers.size() < boardDTOs.size()) {
-            throw new IllegalArgumentException("Duplicate board numbers found in bulk upload");
-        }
+                // Handle Pack relationship
+                if (boardDTO.getPackId() != null) {
+                    Pack pack = packRepository.findById(boardDTO.getPackId())
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "Pack not found with id: " + boardDTO.getPackId()));
+                    board.setPack(pack);
+                    System.out.println("Set Pack for Board: " + pack);
+                }
 
-        // Check for existing board numbers in the database
-        for (String boardNumber : newBoardNumbers) {
-            if (boardRepository.existsByBoardNumber(boardNumber)) {
-                errors.add("Board number already exists: " + boardNumber);
+                // Handle User relationship
+                if (boardDTO.getAssignedUserId() != null) {
+                    User user = userRepository.findById(boardDTO.getAssignedUserId())
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "User not found with id: " + boardDTO.getAssignedUserId()));
+                    board.setAssignedUser(user);
+                    System.out.println("Set AssignedUser for Board: " + user);
+                }
+
+                // Save entity
+                Board savedBoard = boardRepository.save(board);
+                System.out.println("Saved Board: " + savedBoard);
+
+                // Map back to DTO and add to the result list
+                BoardDTO savedBoardDTO = boardMapper.toDTO(savedBoard);
+                createdBoards.add(savedBoardDTO);
+                System.out.println("Added saved BoardDTO to createdBoards list: " + savedBoardDTO);
+
+            } catch (ResourceNotFoundException rnfe) {
+                String errorMsg = "Resource not found for board number: " + boardDTO.getBoardNumber() + ". " + rnfe.getMessage();
+                System.err.println(errorMsg);
+                errors.add(errorMsg);
+                // Optionally, you can continue processing other boards instead of throwing immediately
+                // Uncomment the next line if you want to stop processing on the first error
+                // throw new RuntimeException(errorMsg, rnfe);
+            } catch (Exception e) {
+                String errorMsg = "Error processing board number: " + boardDTO.getBoardNumber();
+                System.err.println(errorMsg);
+                e.printStackTrace();
+                errors.add(errorMsg);
+                // Optionally, you can continue processing other boards instead of throwing immediately
+                // Uncomment the next line if you want to stop processing on the first error
+                // throw new RuntimeException(errorMsg, e);
             }
         }
 
         if (!errors.isEmpty()) {
-            throw new IllegalArgumentException("Validation errors: " + String.join(", ", errors));
-        }
-
-        // Process all boards
-        for (BoardDTO boardDTO : boardDTOs) {
-            try {
-                Board board = boardMapper.toEntity(boardDTO);
-                Board savedBoard = boardRepository.save(board);
-                createdBoards.add(boardMapper.toDTO(savedBoard));
-            } catch (Exception e) {
-                throw new RuntimeException("Error processing board: " + boardDTO.getBoardNumber(), e);
-            }
+            // You can choose how to handle errors. Here, we're throwing an exception with all error messages.
+            throw new RuntimeException("Errors occurred during bulk board creation: " + String.join("; ", errors));
         }
 
         return createdBoards;

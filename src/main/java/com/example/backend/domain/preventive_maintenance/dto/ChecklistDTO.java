@@ -19,4 +19,7 @@ public class ChecklistDTO {
     private LocalDateTime expiryDate;
     private String workStatus;
     private LocalDateTime createdAt;
+    
+    // New field for week number
+    private Integer weekNumber;
 }

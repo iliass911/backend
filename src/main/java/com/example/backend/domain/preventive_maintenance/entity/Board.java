@@ -29,7 +29,7 @@ public class Board {
     // -------------------------------------------------
     // 2) Board Number Field
     // -------------------------------------------------
-    @Column(name = "board_number", unique = true, nullable = false)
+    @Column(name = "board_number", nullable = false)
     @NotBlank(message = "Board Number is required")
     private String boardNumber;
 
@@ -131,6 +131,7 @@ public class Board {
     @Column(name = "storage_place")
     private String storagePlace;
 
+    // Newly added status field with default value
     @Column(name = "status")
     private String status = "PENDING"; // PENDING, OK, or DANGER
 

@@ -19,6 +19,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,19 +58,17 @@ public class ChecklistService {
                 .orElseThrow(() -> new RuntimeException("Board not found"));
 
         Checklist checklist = ChecklistMapper.toEntity(dto, board);
-        checklist.setWorkStatus(determineWorkStatus(dto.getCompletionPercentage()));
-
-        // If quality is validated, set validation/expiry dates & mark board as OK
+        
+        // If quality validated, set validation date and expiry
         if (dto.getQualityValidated()) {
             checklist.setValidationDate(LocalDateTime.now());
-            // Example: next maintenance date is the start of the next scheduled week
             checklist.setExpiryDate(calculateNextMaintenanceDate(board));
+            checklist.setWorkStatus("COMPLETED");
             board.setStatus("OK");
         } else {
-            // If not validated and we're past the scheduled week, mark as DANGER
-            if (isPastScheduledWeek(board)) {
-                board.setStatus("DANGER");
-            }
+            // Not validated by quality -> IN_PROGRESS
+            checklist.setWorkStatus("IN_PROGRESS");
+            board.setStatus("IN_PROGRESS");
         }
 
         boardRepository.save(board);
@@ -180,8 +179,7 @@ public class ChecklistService {
      * Placeholder: implement your logic to retrieve the Board's current scheduled week.
      */
     private int getCurrentScheduledWeek(Board board) {
-        // TODO: Replace with your real logic. For illustration, let's return the board's "currentWeek".
-        // If not stored in the board, you might need a separate field or data source.
+        // TODO: Replace with your real logic. For illustration, let's return the current week.
         return LocalDateTime.now().get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
     }
 
@@ -234,5 +232,4 @@ public class ChecklistService {
                         : (completed > total / 2 ? "Advanced" : "Retard")
         );
     }
-
 }

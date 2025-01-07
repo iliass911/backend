@@ -1,8 +1,9 @@
 package com.example.backend.domain.preventive_maintenance.mapper;
-import com.example.backend.domain.preventive_maintenance.entity.Board;
+
 import com.example.backend.domain.preventive_maintenance.dto.ChecklistDTO;
-import com.example.backend.domain.preventive_maintenance.entity.Checklist;
 import com.example.backend.domain.preventive_maintenance.entity.Board;
+import com.example.backend.domain.preventive_maintenance.entity.Checklist;
+
 public class ChecklistMapper {
     public static ChecklistDTO toDTO(Checklist checklist) {
         return ChecklistDTO.builder()
@@ -17,6 +18,7 @@ public class ChecklistMapper {
                 .expiryDate(checklist.getExpiryDate())
                 .workStatus(checklist.getWorkStatus())
                 .createdAt(checklist.getCreatedAt())
+                .weekNumber(checklist.getWeekNumber())  // Mapping new field
                 .build();
     }
 
@@ -31,6 +33,7 @@ public class ChecklistMapper {
                 .validationDate(dto.getValidationDate())
                 .expiryDate(dto.getExpiryDate())
                 .workStatus(dto.getWorkStatus())
+                .weekNumber(dto.getWeekNumber())  // Mapping new field
                 .build();
     }
 }

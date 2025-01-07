@@ -31,6 +31,10 @@ public class Checklist {
     private String workStatus;        
     private LocalDateTime createdAt;
     
+    // New field for week number
+    @Column(name = "week_number")
+    private Integer weekNumber;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
