@@ -3,11 +3,11 @@ package com.example.backend.domain.preventive_maintenance.service;
 import com.example.backend.domain.preventive_maintenance.dto.BoardDTO;
 import com.example.backend.domain.preventive_maintenance.entity.Board;
 import com.example.backend.domain.preventive_maintenance.entity.Pack;
-import com.example.backend.domain.user.entity.User;  // Correct import for User
 import com.example.backend.domain.preventive_maintenance.mapper.BoardMapper;
 import com.example.backend.domain.preventive_maintenance.repository.BoardRepository;
 import com.example.backend.domain.preventive_maintenance.repository.PackRepository;
-import com.example.backend.domain.user.repository.UserRepository;  // Correct import for UserRepository
+import com.example.backend.domain.user.entity.User;
+import com.example.backend.domain.user.repository.UserRepository;
 import com.example.backend.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,21 +18,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class BoardServiceImpl implements BoardService {
-    
-    // Autowired repositories and mappers
+
     @Autowired
     private BoardRepository boardRepository;
 
     @Autowired
     private BoardMapper boardMapper;
 
-    // Repositories for handling Pack and User relationships
     @Autowired
     private PackRepository packRepository;
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BoardFamilyService familyService;
 
     @Override
     public List<BoardDTO> getAllBoards() {
@@ -40,9 +42,17 @@ public class BoardServiceImpl implements BoardService {
             System.out.println("Fetching all boards from the repository.");
             List<Board> boards = boardRepository.findAll();
             List<BoardDTO> boardDTOs = boards.stream()
-                    .map(boardMapper::toDTO)
+                    .map(board -> {
+                        BoardDTO dto = boardMapper.toDTO(board);
+                        // Debug each board's dates
+                        System.out.println("Board " + dto.getBoardNumber() + " dates:");
+                        System.out.println("  creationDate: " + dto.getCreationDate());
+                        System.out.println("  firstYellowReleaseDate: " + dto.getFirstYellowReleaseDate());
+                        System.out.println("  firstOrangeReleaseDate: " + dto.getFirstOrangeReleaseDate());
+                        System.out.println("  firstGreenReleaseDate: " + dto.getFirstGreenReleaseDate());
+                        return dto;
+                    })
                     .collect(Collectors.toList());
-            System.out.println("Fetched " + boardDTOs.size() + " boards.");
             return boardDTOs;
         } catch (Exception e) {
             System.out.println("Error in getAllBoards: " + e.getMessage());
@@ -73,10 +83,8 @@ public class BoardServiceImpl implements BoardService {
     @Override
     public BoardDTO createBoard(BoardDTO boardDTO) {
         try {
-            // Log incoming DTO
             System.out.println("Creating board with data: " + boardDTO);
-
-            // Map to entity
+            // Map DTO to entity
             Board board = boardMapper.toEntity(boardDTO);
             System.out.println("Mapped to entity: " + board);
 
@@ -96,7 +104,7 @@ public class BoardServiceImpl implements BoardService {
                 board.setAssignedUser(user);
             }
 
-            // Save entity
+            // Save entity without family assignment
             Board savedBoard = boardRepository.save(board);
             System.out.println("Saved board: " + savedBoard);
 
@@ -112,10 +120,6 @@ public class BoardServiceImpl implements BoardService {
         }
     }
 
-    /**
-     * Updates an existing Board entity by merging changes from a BoardDTO,
-     * and also manages the Pack and User relationships if present.
-     */
     @Override
     @Transactional
     public BoardDTO updateBoard(Long id, BoardDTO boardDTO) {
@@ -226,27 +230,17 @@ public class BoardServiceImpl implements BoardService {
         }
     }
 
-    /**
-     * Creates multiple Board entities in bulk based on the provided DTOs.
-     *
-     * @param boardDTOs The list of BoardDTOs containing Board details.
-     * @return List of BoardDTOs representing the created Boards.
-     * @throws RuntimeException if any board fails to process.
-     */
     @Override
     @Transactional
     public List<BoardDTO> createBulkBoards(List<BoardDTO> boardDTOs) {
         List<BoardDTO> createdBoards = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
-        // Process all boards
         for (BoardDTO boardDTO : boardDTOs) {
             try {
-                // Map DTO to entity
                 Board board = boardMapper.toEntity(boardDTO);
                 System.out.println("Mapped BoardDTO to Board entity: " + board);
 
-                // Handle Pack relationship
                 if (boardDTO.getPackId() != null) {
                     Pack pack = packRepository.findById(boardDTO.getPackId())
                             .orElseThrow(() -> new ResourceNotFoundException(
@@ -255,7 +249,6 @@ public class BoardServiceImpl implements BoardService {
                     System.out.println("Set Pack for Board: " + pack);
                 }
 
-                // Handle User relationship
                 if (boardDTO.getAssignedUserId() != null) {
                     User user = userRepository.findById(boardDTO.getAssignedUserId())
                             .orElseThrow(() -> new ResourceNotFoundException(
@@ -264,11 +257,9 @@ public class BoardServiceImpl implements BoardService {
                     System.out.println("Set AssignedUser for Board: " + user);
                 }
 
-                // Save entity
                 Board savedBoard = boardRepository.save(board);
                 System.out.println("Saved Board: " + savedBoard);
 
-                // Map back to DTO and add to the result list
                 BoardDTO savedBoardDTO = boardMapper.toDTO(savedBoard);
                 createdBoards.add(savedBoardDTO);
                 System.out.println("Added saved BoardDTO to createdBoards list: " + savedBoardDTO);
@@ -277,22 +268,15 @@ public class BoardServiceImpl implements BoardService {
                 String errorMsg = "Resource not found for board number: " + boardDTO.getBoardNumber() + ". " + rnfe.getMessage();
                 System.err.println(errorMsg);
                 errors.add(errorMsg);
-                // Optionally, you can continue processing other boards instead of throwing immediately
-                // Uncomment the next line if you want to stop processing on the first error
-                // throw new RuntimeException(errorMsg, rnfe);
             } catch (Exception e) {
                 String errorMsg = "Error processing board number: " + boardDTO.getBoardNumber();
                 System.err.println(errorMsg);
                 e.printStackTrace();
                 errors.add(errorMsg);
-                // Optionally, you can continue processing other boards instead of throwing immediately
-                // Uncomment the next line if you want to stop processing on the first error
-                // throw new RuntimeException(errorMsg, e);
             }
         }
 
         if (!errors.isEmpty()) {
-            // You can choose how to handle errors. Here, we're throwing an exception with all error messages.
             throw new RuntimeException("Errors occurred during bulk board creation: " + String.join("; ", errors));
         }
 

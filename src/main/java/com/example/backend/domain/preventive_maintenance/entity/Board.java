@@ -9,6 +9,9 @@ import com.example.backend.domain.preventive_maintenance.entity.Checklist;
 import java.time.LocalDate;
 import java.util.Set;
 
+// Import BoardFamily if it's in a different package. Adjust the package as necessary.
+// import com.example.backend.domain.preventive_maintenance.entity.BoardFamily;
+
 @Entity
 @Table(name = "boards")
 @Getter
@@ -151,4 +154,11 @@ public class Board {
 
     @OneToOne(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private Bom bom;
+
+    // -------------------------------------------------
+    // 5) Family Relationship
+    // -------------------------------------------------
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "family_id")
+    private BoardFamily family;
 }

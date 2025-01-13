@@ -16,6 +16,7 @@ public class InventoryItemMapper {
         dto.setPlace(entity.getPlace());
         dto.setUnit(entity.getUnit());
         dto.setPrice(entity.getPrice());
+        dto.setSezamNumber(entity.getSezamNumber());  // Added mapping for sezamNumber
         // Compute totalPrice from entity method
         dto.setTotalPrice(entity.getTotalPrice());
         return dto;
@@ -32,6 +33,7 @@ public class InventoryItemMapper {
                 .place(dto.getPlace())
                 .unit(dto.getUnit())
                 .price(dto.getPrice())
+                .sezamNumber(dto.getSezamNumber())  // Added mapping for sezamNumber
                 .build();
     }
 }

@@ -25,7 +25,10 @@ public class InventoryItem {
     private String place;    // PLACE
     private String unit;     // UNIT
     private Double price;    // PRICE
-    
+
+    @Column
+    private String sezamNumber;  // New field sezamNumber
+
     // TOTAL_PRICE is computed, not stored:
     @Transient
     public Double getTotalPrice() {

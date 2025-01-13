@@ -25,6 +25,8 @@ public class InventoryItemDTO {
     @NotNull
     private Double price;
 
+    private String sezamNumber;  // New field sezamNumber
+
     // totalPrice will be computed by the mapper or after converting from entity
     private Double totalPrice;
 }
