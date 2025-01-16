@@ -1,5 +1,3 @@
-// src/main/java/com/example/backend/domain/preventive_maintenance/service/MaintenanceScheduleService.java
-
 package com.example.backend.domain.preventive_maintenance.service;
 
 import com.example.backend.domain.preventive_maintenance.dto.MaintenanceScheduleDTO;
@@ -17,7 +15,8 @@ public class MaintenanceScheduleService {
     private final MaintenanceScheduleRepository scheduleRepository;
     private final MaintenanceScheduleMapper scheduleMapper;
 
-    public MaintenanceScheduleService(MaintenanceScheduleRepository scheduleRepository, MaintenanceScheduleMapper scheduleMapper) {
+    public MaintenanceScheduleService(MaintenanceScheduleRepository scheduleRepository,
+                                      MaintenanceScheduleMapper scheduleMapper) {
         this.scheduleRepository = scheduleRepository;
         this.scheduleMapper = scheduleMapper;
     }
@@ -29,10 +28,11 @@ public class MaintenanceScheduleService {
     }
 
     public MaintenanceScheduleDTO createSchedule(MaintenanceScheduleDTO dto) {
-        // Optional: Prevent duplicate assignments
-        scheduleRepository.findBySiteIdAndPackIdAndWeekNumber(dto.getSiteId(), dto.getPackId(), dto.getWeekNumber())
+        scheduleRepository.findByProjectIdAndPackIdAndWeekNumber(
+                dto.getProjectId(), dto.getPackId(), dto.getWeekNumber())
                 .ifPresent(schedule -> {
-                    throw new IllegalArgumentException("Schedule already exists for this Site, Pack, and Week.");
+                    throw new IllegalArgumentException(
+                        "Schedule already exists for this Project, Pack, and Week.");
                 });
 
         MaintenanceSchedule schedule = scheduleMapper.toEntity(dto);
@@ -40,8 +40,9 @@ public class MaintenanceScheduleService {
         return scheduleMapper.toDTO(saved);
     }
 
-    public void deleteSchedule(Long siteId, Long packId, Integer weekNumber) {
-        MaintenanceSchedule schedule = scheduleRepository.findBySiteIdAndPackIdAndWeekNumber(siteId, packId, weekNumber)
+    public void deleteSchedule(Long projectId, Long packId, Integer weekNumber) {
+        MaintenanceSchedule schedule = scheduleRepository
+                .findByProjectIdAndPackIdAndWeekNumber(projectId, packId, weekNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Maintenance schedule not found."));
         scheduleRepository.delete(schedule);
     }

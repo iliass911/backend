@@ -4,9 +4,12 @@ import com.example.backend.domain.preventive_maintenance.dto.ChecklistDTO;
 import com.example.backend.domain.preventive_maintenance.dto.ProgressResponse;
 import com.example.backend.domain.preventive_maintenance.entity.Board;
 import com.example.backend.domain.preventive_maintenance.entity.Checklist;
+import com.example.backend.domain.preventive_maintenance.entity.MaintenanceSchedule;
+import com.example.backend.domain.preventive_maintenance.enums.BoardMaintenanceStatus;
 import com.example.backend.domain.preventive_maintenance.mapper.ChecklistMapper;
 import com.example.backend.domain.preventive_maintenance.repository.BoardRepository;
 import com.example.backend.domain.preventive_maintenance.repository.ChecklistRepository;
+import com.example.backend.domain.preventive_maintenance.repository.MaintenanceScheduleRepository;
 import com.example.backend.domain.user.entity.User;
 import com.example.backend.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +22,16 @@ import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ChecklistService {
-
     private final ChecklistRepository checklistRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final MaintenanceScheduleRepository maintenanceScheduleRepository;  // Added repository dependency
 
     /**
      * Retrieve all checklists.
@@ -49,6 +52,56 @@ public class ChecklistService {
     }
 
     /**
+     * Calculate maintenance status for a board based on schedule and checklists.
+     */
+    public BoardMaintenanceStatus calculateBoardStatus(Board board, int currentWeek, List<Integer> scheduledWeeks) {
+        // Find closest scheduled week (past or future)
+        Optional<Integer> nextScheduledWeek = scheduledWeeks.stream()
+                .filter(week -> week >= currentWeek)
+                .min(Integer::compareTo);
+
+        Optional<Integer> previousScheduledWeek = scheduledWeeks.stream()
+                .filter(week -> week < currentWeek)
+                .max(Integer::compareTo);
+
+        // Get latest checklist for the board
+        Optional<Checklist> latestChecklist = checklistRepository
+                .findTopByBoardOrderByCreatedAtDesc(board);
+
+        if (latestChecklist.isEmpty()) {
+            // No checklist exists - determine if we're behind schedule
+            return previousScheduledWeek.isPresent() ? 
+                   BoardMaintenanceStatus.RETARD : 
+                   BoardMaintenanceStatus.PENDING;
+        }
+
+        Checklist checklist = latestChecklist.get();
+        int checklistWeek = checklist.getWeekNumber();
+
+        // If checklist is validated, check its timing
+        if (checklist.getQualityValidated()) {
+            if (nextScheduledWeek.isPresent() && checklistWeek < nextScheduledWeek.get()) {
+                return BoardMaintenanceStatus.ADVANCED;
+            } else if (previousScheduledWeek.isPresent() && checklistWeek <= previousScheduledWeek.get()) {
+                return BoardMaintenanceStatus.COMPLETED;
+            }
+        }
+
+        // Check if we're behind schedule
+        if (previousScheduledWeek.isPresent() && checklistWeek <= previousScheduledWeek.get()
+            && !checklist.getQualityValidated()) {
+            return BoardMaintenanceStatus.RETARD;
+        }
+
+        // In progress but not yet due
+        if (!checklist.getQualityValidated()) {
+            return BoardMaintenanceStatus.IN_PROGRESS;
+        }
+
+        return BoardMaintenanceStatus.PENDING;
+    }
+
+    /**
      * Create a new checklist and update the associated Board status if necessary.
      */
     public ChecklistDTO createChecklist(ChecklistDTO dto) {
@@ -57,8 +110,13 @@ public class ChecklistService {
         Board board = boardRepository.findById(dto.getBoardId())
                 .orElseThrow(() -> new RuntimeException("Board not found"));
 
+        // Ensure week number is provided
+        if (dto.getWeekNumber() == null) {
+            throw new IllegalArgumentException("Week number is required");
+        }
+
         Checklist checklist = ChecklistMapper.toEntity(dto, board);
-        
+
         // If quality validated, set validation date and expiry
         if (dto.getQualityValidated()) {
             checklist.setValidationDate(LocalDateTime.now());
@@ -66,7 +124,6 @@ public class ChecklistService {
             checklist.setWorkStatus("COMPLETED");
             board.setStatus("OK");
         } else {
-            // Not validated by quality -> IN_PROGRESS
             checklist.setWorkStatus("IN_PROGRESS");
             board.setStatus("IN_PROGRESS");
         }
@@ -108,15 +165,12 @@ public class ChecklistService {
 
         if (dto.getQualityValidated()) {
             checklist.setValidationDate(LocalDateTime.now());
-            // Example: next schedule date — adjust as needed
             checklist.setExpiryDate(calculateNextMaintenanceDate(checklist.getBoard()));
         }
     }
 
     /**
      * Scheduled task to check and update board statuses daily at midnight.
-     *  - If a checklist has expired, the board is reset to "PENDING".
-     *  - If a board is "PENDING" and we're past its scheduled week, it's set to "DANGER".
      */
     @Scheduled(cron = "0 0 0 * * ?") // Runs at midnight every day
     public void updateBoardStatuses() {
@@ -124,20 +178,17 @@ public class ChecklistService {
         LocalDateTime now = LocalDateTime.now();
 
         for (Board board : boards) {
-            // Find the latest checklist for this board
             Checklist latestChecklist = checklistRepository
                     .findTopByBoardOrderByValidationDateDesc(board)
                     .orElse(null);
 
             if (latestChecklist != null && latestChecklist.getExpiryDate() != null) {
-                // If the checklist has expired, reset board status to PENDING
                 if (now.isAfter(latestChecklist.getExpiryDate())) {
                     board.setStatus("PENDING");
                     boardRepository.save(board);
                 }
             }
 
-            // If board is PENDING and we're past the scheduled week, mark as DANGER
             if ("PENDING".equals(board.getStatus()) && isPastScheduledWeek(board)) {
                 board.setStatus("DANGER");
                 boardRepository.save(board);
@@ -145,47 +196,71 @@ public class ChecklistService {
         }
     }
 
-    /**
-     * Determines if the current date is past the board's scheduled week.
-     */
     private boolean isPastScheduledWeek(Board board) {
         int currentWeek = LocalDateTime.now().get(WeekFields.ISO.weekOfWeekBasedYear());
         return getCurrentScheduledWeek(board) < currentWeek;
     }
 
     /**
-     * Calculate the next maintenance date, e.g. the start of the next scheduled week.
-     * You should adapt this logic based on your scheduling needs.
+     * Updated calculateNextMaintenanceDate using MaintenanceScheduleRepository.
      */
     private LocalDateTime calculateNextMaintenanceDate(Board board) {
-        int currentWeek = LocalDateTime.now().get(WeekFields.ISO.weekOfWeekBasedYear());
-        int nextScheduledWeek = findNextScheduledWeek(board, currentWeek);
+        // Get current week and year
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+        int currentWeek = now.get(WeekFields.ISO.weekOfWeekBasedYear());
+        
+        // Find next scheduled maintenance for this pack in current year
+        Optional<MaintenanceSchedule> nextSchedule = maintenanceScheduleRepository
+            .findFirstByPackIdAndYearAndWeekNumberGreaterThanOrderByWeekNumberAsc(
+                board.getPack().getId(),
+                currentYear,
+                currentWeek
+            );
 
-        // Example: start of that next scheduled week (Monday)
-        return LocalDateTime.now()
-                .with(WeekFields.ISO.weekOfWeekBasedYear(), nextScheduledWeek)
-                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        if (nextSchedule.isPresent()) {
+            return now
+                .with(WeekFields.ISO.weekOfWeekBasedYear(), nextSchedule.get().getWeekNumber())
+                .with(WeekFields.ISO.dayOfWeek(), 1) // Start of week (Monday)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0);
+        }
+
+        // If no next schedule in current year, look for first schedule of next year
+        List<MaintenanceSchedule> nextYearSchedules = maintenanceScheduleRepository
+            .findByPackIdAndYearOrderByWeekNumberAsc(board.getPack().getId(), currentYear + 1);
+
+        if (!nextYearSchedules.isEmpty()) {
+            // Use first schedule of next year
+            return now
+                .plusYears(1)
+                .with(WeekFields.ISO.weekOfWeekBasedYear(), nextYearSchedules.get(0).getWeekNumber())
+                .with(WeekFields.ISO.dayOfWeek(), 1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0);
+        }
+
+        // If no schedules found at all, default to end of next week
+        return now
+            .plusWeeks(1)
+            .with(WeekFields.ISO.dayOfWeek(), 7)
+            .withHour(23)
+            .withMinute(59)
+            .withSecond(59);
     }
 
-    /**
-     * Placeholder: implement your logic to find the next scheduled week for this Board.
-     */
     private int findNextScheduledWeek(Board board, int currentWeek) {
-        // TODO: Replace with your real logic. For illustration, let's just say next week.
-        return currentWeek + 1;
+        // TODO: Implement your logic to determine the next scheduled week for the given board.
+        return currentWeek + 1; // Example placeholder
     }
 
-    /**
-     * Placeholder: implement your logic to retrieve the Board's current scheduled week.
-     */
     private int getCurrentScheduledWeek(Board board) {
-        // TODO: Replace with your real logic. For illustration, let's return the current week.
+        // TODO: Implement your logic based on board's schedule.
         return LocalDateTime.now().get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
     }
 
-    /**
-     * Returns a work status string based on the completion percentage.
-     */
     private String determineWorkStatus(Integer percentage) {
         if (percentage == null || percentage == 0) {
             return "NOT_STARTED";
@@ -196,9 +271,6 @@ public class ChecklistService {
         return "IN_PROGRESS";
     }
 
-    /**
-     * Validate the completion percentage is between 0 and 100 (inclusive).
-     */
     private void validateCompletionPercentage(Integer percentage) {
         if (percentage == null) {
             throw new IllegalArgumentException("Completion percentage cannot be null");
@@ -209,27 +281,35 @@ public class ChecklistService {
     }
 
     /**
-     * Get the progress of a user by counting completed vs. total checklists (example logic).
+     * Get user progress including advanced and retard counts.
      */
     public ProgressResponse getUserProgress(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // NOTE: This assumes findByBoardId is actually retrieving checklists for that user,
-        //       but that might need to be adjusted if your data model is different.
-        List<Checklist> userChecklists = checklistRepository.findByBoardId(userId);
-        long total = userChecklists.size();
+        // Use technician name instead of ID for fetching checklists
+        List<Checklist> userChecklists = checklistRepository.findByTechnicianName(user.getUsername());
+
+        int currentWeek = LocalDateTime.now().get(WeekFields.ISO.weekOfWeekBasedYear());
+
+        long advanced = userChecklists.stream()
+                .filter(cl -> cl.getQualityValidated() && cl.getWeekNumber() > currentWeek)
+                .count();
+
+        long retard = userChecklists.stream()
+                .filter(cl -> !cl.getQualityValidated() && cl.getWeekNumber() < currentWeek)
+                .count();
+
         long completed = userChecklists.stream()
-                .filter(c -> "COMPLETED".equals(c.getWorkStatus()))
+                .filter(cl -> cl.getQualityValidated() && cl.getWeekNumber() <= currentWeek)
                 .count();
 
         return new ProgressResponse(
-                total,
-                completed,
-                total - completed,
-                completed == total
-                        ? "Completed"
-                        : (completed > total / 2 ? "Advanced" : "Retard")
+            userChecklists.size(),
+            completed,
+            advanced,
+            retard,
+            advanced > retard ? "Advanced" : "Retard"
         );
     }
 }

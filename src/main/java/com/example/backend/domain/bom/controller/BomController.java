@@ -1,110 +1,89 @@
+// BomController.java  
 package com.example.backend.domain.bom.controller;
 
+import com.example.backend.common.BaseController;
 import com.example.backend.domain.bom.dto.BomDTO;
 import com.example.backend.domain.bom.dto.BomLineDTO;
 import com.example.backend.domain.bom.service.BomService;
-import lombok.RequiredArgsConstructor;
+import com.example.backend.domain.role.service.PermissionChecker;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Set;
 
 @RestController
 @RequestMapping("/api/boms")
-@RequiredArgsConstructor
-public class BomController {
+public class BomController extends BaseController {
     private final BomService bomService;
 
-    /**
-     * Create a new BOM for a given Board Family.
-     * This will create the same BOM for all boards in the family.
-     */
+    public BomController(PermissionChecker permissionChecker, BomService bomService) {
+        super(permissionChecker);
+        this.bomService = bomService;
+    }
+
     @PostMapping("/family/{familyId}")
     public ResponseEntity<List<BomDTO>> createBomForFamily(@PathVariable Long familyId) {
+        checkPermission("BOM", "CREATE");
         List<BomDTO> createdBoms = bomService.createBomForFamily(familyId);
         return ResponseEntity.ok(createdBoms);
     }
 
-    /**
-     * Get existing BOMs by Family ID.
-     * Returns the BOM template for the family.
-     */
     @GetMapping("/family/{familyId}")
     public ResponseEntity<BomDTO> getBomByFamilyId(@PathVariable Long familyId) {
+        checkPermission("BOM", "VIEW");
         BomDTO bomDTO = bomService.getBomByFamilyId(familyId);
         return ResponseEntity.ok(bomDTO);
     }
 
-    /**
-     * Add or update BOM lines for a family.
-     * This will update the BOM for all boards in the family.
-     */
-    @PostMapping("/family/{familyId}/lines")
+    @PostMapping("/family/{familyId}/lines") 
     public ResponseEntity<List<BomDTO>> addOrUpdateFamilyBomLines(
             @PathVariable Long familyId,
             @RequestBody Set<BomLineDTO> lineDTOs) {
+        checkPermission("BOM", "MODIFY");  
         List<BomDTO> updatedBoms = bomService.addOrUpdateFamilyBomLines(familyId, lineDTOs);
         return ResponseEntity.ok(updatedBoms);
     }
 
-    /**
-     * Create a new BOM for a given Board.
-     * Kept for backward compatibility and individual board cases.
-     */
     @PostMapping("/board/{boardId}")
     public ResponseEntity<BomDTO> createBomForBoard(@PathVariable Long boardId) {
+        checkPermission("BOM", "CREATE");
         BomDTO createdBom = bomService.createBom(boardId);
         return ResponseEntity.ok(createdBom);
     }
 
-    /**
-     * Get an existing BOM by Board ID.
-     * Kept for backward compatibility and individual board cases.
-     */
     @GetMapping("/board/{boardId}")
     public ResponseEntity<BomDTO> getBomByBoardId(@PathVariable Long boardId) {
+        checkPermission("BOM", "VIEW");  
         BomDTO bomDTO = bomService.getBomByBoardId(boardId);
         return ResponseEntity.ok(bomDTO);
     }
 
-    /**
-     * Get an existing BOM by ID.
-     * Kept for backward compatibility.
-     */
     @GetMapping("/{bomId}")
     public ResponseEntity<BomDTO> getBom(@PathVariable Long bomId) {
+        checkPermission("BOM", "VIEW");
         BomDTO bomDTO = bomService.getBom(bomId);
         return ResponseEntity.ok(bomDTO);
     }
 
-    /**
-     * Add or update BOM lines for a specific BOM.
-     * Kept for backward compatibility and individual board cases.
-     */
     @PostMapping("/{bomId}/lines")
     public ResponseEntity<BomDTO> addOrUpdateBomLines(
             @PathVariable Long bomId,
             @RequestBody Set<BomLineDTO> lineDTOs) {
+        checkPermission("BOM", "MODIFY");  
         BomDTO updatedBom = bomService.addOrUpdateBomLines(bomId, lineDTOs);
         return ResponseEntity.ok(updatedBom);
     }
 
-    /**
-     * Delete a BOM entirely.
-     * Kept for backward compatibility.
-     */
     @DeleteMapping("/{bomId}")
     public ResponseEntity<Void> deleteBom(@PathVariable Long bomId) {
+        checkPermission("BOM", "DELETE");
         bomService.deleteBom(bomId);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Delete all BOMs for a family.
-     */
     @DeleteMapping("/family/{familyId}")
     public ResponseEntity<Void> deleteFamilyBoms(@PathVariable Long familyId) {
+        checkPermission("BOM", "DELETE");
         bomService.deleteFamilyBoms(familyId);
         return ResponseEntity.noContent().build();
     }

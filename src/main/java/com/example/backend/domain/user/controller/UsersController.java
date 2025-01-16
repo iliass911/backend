@@ -1,46 +1,50 @@
-// src/main/java/com/example/backend/domain/user/controller/UsersController.java
+// UsersController.java
 package com.example.backend.domain.user.controller;
 
+import com.example.backend.common.BaseController;
+import com.example.backend.domain.role.dto.CreateUserRequest;
 import com.example.backend.domain.user.entity.User;
 import com.example.backend.domain.user.service.UserService;
-import com.example.backend.domain.user.dto.PasswordChangeRequest; // Import the DTO
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.backend.domain.role.service.PermissionChecker;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000") // Adjust if your frontend runs elsewhere
-public class UsersController {
+public class UsersController extends BaseController {
+    private final UserService userService;
 
-    @Autowired
-    private UserService userService;
+    public UsersController(PermissionChecker permissionChecker, UserService userService) {
+        super(permissionChecker);
+        this.userService = userService;  
+    }
 
-    // Get all users
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        checkPermission("USER", "VIEW");
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // Get a specific user by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        }
-        return ResponseEntity.notFound().build();
+    @PostMapping
+    public ResponseEntity<User> createUser(@RequestBody CreateUserRequest request) {
+        checkPermission("USER", "CREATE");
+        return ResponseEntity.ok(userService.createUser(request));
     }
 
-    // Change password endpoint
-    @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody PasswordChangeRequest request) {
-        userService.changePassword(request);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        checkPermission("USER", "DELETE"); 
+        userService.deleteUser(id);
         return ResponseEntity.ok().build();
     }
 
-    // Additional CRUD operations can be added here (Create, Update, Delete)
+    @PutMapping("/{id}/role")
+    public ResponseEntity<User> updateUserRole(
+        @PathVariable Long id,  
+        @RequestParam Long roleId
+    ) {
+        checkPermission("USER", "UPDATE");
+        return ResponseEntity.ok(userService.updateUserRole(id, roleId));
+    }
 }

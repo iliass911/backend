@@ -1,6 +1,10 @@
+// src/main/java/com/example/backend/domain/preventive_maintenance/dto/ChecklistDTO.java
 package com.example.backend.domain.preventive_maintenance.dto;
 
-import lombok.*;
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,7 +23,5 @@ public class ChecklistDTO {
     private LocalDateTime expiryDate;
     private String workStatus;
     private LocalDateTime createdAt;
-    
-    // New field for week number
     private Integer weekNumber;
 }

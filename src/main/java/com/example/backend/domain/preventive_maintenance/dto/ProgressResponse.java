@@ -3,12 +3,17 @@ package com.example.backend.domain.preventive_maintenance.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 @Data
+@Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class ProgressResponse {
-    private Long totalChecklists;
-    private Long completedChecklists;
-    private Long pendingChecklists;
-    private String status; // e.g., "Advanced", "Retard", "Completed"
+    private long total;
+    private long completed;
+    private long advanced;
+    private long retard;
+    private String status; // "Advanced" or "Retard"
 }

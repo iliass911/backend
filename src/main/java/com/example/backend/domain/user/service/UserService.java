@@ -1,27 +1,32 @@
-// src/main/java/com/example/backend/domain/user/service/UserService.java
 package com.example.backend.domain.user.service;
 
 import com.example.backend.domain.audit.service.AuditLogService;
-import com.example.backend.domain.user.dto.LoginRequest; 
+import com.example.backend.domain.user.dto.LoginRequest;
 import com.example.backend.domain.user.dto.RegisterRequest;
-import com.example.backend.domain.user.dto.PasswordChangeRequest; // Import the DTO
+import com.example.backend.domain.role.dto.CreateUserRequest;
 import com.example.backend.domain.user.entity.User;
+import com.example.backend.domain.role.entity.Role;
 import com.example.backend.domain.user.repository.UserRepository;
+import com.example.backend.domain.role.repository.RoleRepository;
 import com.example.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import java.util.*;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
-    
-    private final Set<String> allowedMatricules = new HashSet<>(Arrays.asList("90940", "23", "4501", "90948"));
+
+    private static final String ADMIN_MATRICULE = "90940";
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String DEFAULT_ROLE = "USER";
 
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -35,16 +40,12 @@ public class UserService {
     }
 
     public User registerUser(RegisterRequest registerRequest) throws Exception {
-        if (!allowedMatricules.contains(registerRequest.getMatricule())) {
-            throw new Exception("Matricule not allowed to register.");
-        }
-
         if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
-            throw new Exception("Username already exists.");
+            throw new Exception("Username already exists");
         }
 
-        String hashedPassword = BCrypt.hashpw(registerRequest.getPassword(), BCrypt.gensalt());
-        String role = registerRequest.getMatricule().equals("90940") ? "ADMIN" : "USER";
+        String hashedPassword = passwordEncoder.encode(registerRequest.getPassword());
+        String role = determineRole(registerRequest.getMatricule());
 
         User user = User.builder()
                 .username(registerRequest.getUsername())
@@ -53,116 +54,75 @@ public class UserService {
                 .role(role)
                 .build();
 
-        User savedUser = userRepository.save(user);
-        
-        // Log registration event
-        auditLogService.logEvent(
-            savedUser,
-            "USER_REGISTRATION",
-            String.format("New user registered with matricule: %s and role: %s", 
-                savedUser.getMatricule(), savedUser.getRole()),
-            "USER",
-            savedUser.getId()
-        );
-
-        return savedUser;
+        return userRepository.save(user);
     }
 
     public User authenticateUser(LoginRequest loginRequest) throws Exception {
         User user = userRepository.findByUsername(loginRequest.getUsername())
-            .orElseThrow(() -> new Exception("Invalid username or password."));
+                .orElseThrow(() -> new Exception("Invalid username or password"));
 
-        if (!BCrypt.checkpw(loginRequest.getPassword(), user.getPassword())) {
-            auditLogService.logEvent(
-                user,
-                "LOGIN_FAILED",
-                String.format("Failed login attempt for user: %s", user.getUsername()),
-                "USER",
-                user.getId()
-            );
-            throw new Exception("Invalid username or password.");
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new Exception("Invalid username or password");
         }
-
-        // Log successful login
-        auditLogService.logEvent(
-            user,
-            "LOGIN_SUCCESS",
-            String.format("User logged in successfully: %s", user.getUsername()),
-            "USER",
-            user.getId()
-        );
 
         return user;
     }
 
     public List<User> getAllUsers() {
-        User currentUser = getCurrentUser();
-        if (!"ADMIN".equals(currentUser.getRole())) {
-            throw new ResourceNotFoundException("Access denied: Admin privileges required");
-        }
         return userRepository.findAll();
     }
 
-    public User getUserById(Long id) {
-        User currentUser = getCurrentUser();
-        if (!"ADMIN".equals(currentUser.getRole()) && !currentUser.getId().equals(id)) {
-            throw new ResourceNotFoundException("Access denied: Cannot access other user's information");
+    public User createUser(CreateUserRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
         }
-        return userRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        // For the admin matricule, override the requested role with ADMIN
+        String role = determineRole(request.getMatricule());
+        
+        // If it's the admin matricule, find the admin role, otherwise use the requested role
+        Role roleEntity;
+        if (ADMIN_MATRICULE.equals(request.getMatricule())) {
+            roleEntity = roleRepository.findByName(ADMIN_ROLE)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin role not found"));
+        } else {
+            roleEntity = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        }
+
+        User user = User.builder()
+            .username(request.getUsername())
+            .password(passwordEncoder.encode(request.getPassword()))
+            .matricule(request.getMatricule())
+            .role(role)
+            .roleEntity(roleEntity)
+            .build();
+
+        return userRepository.save(user);
     }
 
-    public void addAllowedMatricule(String matricule) {
-        User currentUser = getCurrentUser();
-        if (!"ADMIN".equals(currentUser.getRole())) {
-            throw new ResourceNotFoundException("Access denied: Admin privileges required");
-        }
-        allowedMatricules.add(matricule);
-        
-        auditLogService.logEvent(
-            currentUser,
-            "MATRICULE_ADDED",
-            String.format("Added new allowed matricule: %s", matricule),
-            "SYSTEM",
-            null
-        );
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
     }
 
-    public void removeAllowedMatricule(String matricule) {
-        User currentUser = getCurrentUser();
-        if (!"ADMIN".equals(currentUser.getRole())) {
-            throw new ResourceNotFoundException("Access denied: Admin privileges required");
+    public User updateUserRole(Long userId, Long roleId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // If the user has admin matricule, prevent role changes
+        if (ADMIN_MATRICULE.equals(user.getMatricule())) {
+            throw new RuntimeException("Cannot change role for admin matricule");
         }
-        allowedMatricules.remove(matricule);
-        
-        auditLogService.logEvent(
-            currentUser,
-            "MATRICULE_REMOVED", 
-            String.format("Removed matricule from allowed list: %s", matricule),
-            "SYSTEM",
-            null
-        );
+
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+
+        user.setRole(role.getName());
+        user.setRoleEntity(role);
+        return userRepository.save(user);
     }
-    
-    // Add the changePassword method as per user instruction
-    // Make sure to import: import org.springframework.security.crypto.bcrypt.BCrypt;
-    public void changePassword(PasswordChangeRequest request) {
-        User currentUser = getCurrentUser();
-        
-        if (!BCrypt.checkpw(request.getCurrentPassword(), currentUser.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
-        
-        String newHashedPassword = BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt());
-        currentUser.setPassword(newHashedPassword);
-        userRepository.save(currentUser);
-        
-        auditLogService.logEvent(
-            currentUser,
-            "PASSWORD_CHANGE",
-            "User changed their password",
-            "USER",
-            currentUser.getId()
-        );
+
+    private String determineRole(String matricule) {
+        return ADMIN_MATRICULE.equals(matricule) ? ADMIN_ROLE : DEFAULT_ROLE;
     }
 }

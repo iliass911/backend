@@ -13,4 +13,8 @@ public interface ChecklistRepository extends JpaRepository<Checklist, Long> {
     List<Checklist> findByBoardId(Long boardId);
 
     Optional<Checklist> findTopByBoardOrderByValidationDateDesc(Board board);
+    
+    Optional<Checklist> findTopByBoardOrderByCreatedAtDesc(Board board);
+    
+    List<Checklist> findByTechnicianName(String technicianName);
 }

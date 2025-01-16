@@ -1,6 +1,7 @@
 // src/main/java/com/example/backend/domain/user/entity/User.java
 package com.example.backend.domain.user.entity;
 
+import com.example.backend.domain.role.entity.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class User {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,5 +27,10 @@ public class User {
     private String matricule;
 
     @Column(nullable = false)
-    private String role; // "ADMIN" or "USER"
+    private String role; // This field can still store "ADMIN" or "USER" strings
+
+    // Many-to-One relationship with Role entity
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role roleEntity;
 }

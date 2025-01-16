@@ -1,29 +1,25 @@
 // src/main/java/com/example/backend/domain/preventive_maintenance/entity/Pack.java
-
 package com.example.backend.domain.preventive_maintenance.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 
+//Pack.java
 @Entity
 @Table(name = "packs")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Pack {
+ @Id
+ @GeneratedValue(strategy = GenerationType.IDENTITY)
+ private Long id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+ private String name;
 
-    private String name;
+ @ManyToOne(fetch = FetchType.LAZY, optional = false)
+ @JoinColumn(name = "site_id", nullable = false)
+ private Site site;
 
-    // Establishing a Many-to-One relationship with Site
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "site_id", nullable = false)
-    private Site site;
-
-    // If a Pack can be associated with multiple Projects via Boards, ensure that Boards handle this relationship
+ @ManyToOne(fetch = FetchType.LAZY, optional = false)
+ @JoinColumn(name = "project_id", nullable = false)
+ private Project project;
 }
