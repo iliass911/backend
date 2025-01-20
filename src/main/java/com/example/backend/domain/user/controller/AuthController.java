@@ -1,4 +1,3 @@
-// src/main/java/com/example/backend/domain/user/controller/AuthController.java
 package com.example.backend.domain.user.controller;
 
 import com.example.backend.config.JwtTokenUtil;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @CrossOrigin
 public class AuthController {
+
     @Autowired
     private UserService userService;
     
@@ -23,15 +23,16 @@ public class AuthController {
     @PostMapping("/register")
     public AuthResponse register(@RequestBody RegisterRequest registerRequest) throws Exception {
         User user = userService.registerUser(registerRequest);
-        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole());
-        return new AuthResponse(token, user.getRole(), user.getId());
+        // Insert the *role name* into the token
+        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().getName());
+        return new AuthResponse(token, user.getRole().getName(), user.getId());
     }
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest loginRequest) throws Exception {
         User user = userService.authenticateUser(loginRequest);
-        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole());
-        return new AuthResponse(token, user.getRole(), user.getId());
+        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().getName());
+        return new AuthResponse(token, user.getRole().getName(), user.getId());
     }
 
     @GetMapping("/validate")

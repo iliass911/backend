@@ -1,5 +1,3 @@
-// src/main/java/com/example/backend/config/CorsConfig.java
-
 package com.example.backend.config;
 
 import org.springframework.context.annotation.Bean;

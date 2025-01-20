@@ -1,4 +1,3 @@
-// src/main/java/com/example/backend/config/MultipartConfig.java
 package com.example.backend.config;
 
 import org.springframework.context.annotation.Bean;
@@ -27,7 +26,7 @@ public class MultipartConfig {
         // Set maximum request size
         factory.setMaxRequestSize(DataSize.ofMegabytes(10));
         
-        // Set location for temporary storage
+        // Optional: set location for temporary storage
         // factory.setLocation("temp-uploads");
         
         return factory.createMultipartConfig();

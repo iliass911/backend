@@ -22,41 +22,42 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtTokenUtil jwtTokenUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest request, 
+                                    HttpServletResponse response,
+                                    FilterChain chain)
             throws ServletException, IOException {
         
         final String requestTokenHeader = request.getHeader("Authorization");
-
         String username = null;
         String jwtToken = null;
 
-        // JWT Token is in the form "Bearer token". Remove "Bearer " and get the token
+        // Check if header starts with Bearer
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtTokenUtil.getUsernameFromToken(jwtToken);
             } catch (Exception e) {
-                log.error("Unable to get JWT Token or JWT Token has expired", e);
+                log.error("Unable to parse JWT token", e);
             }
-        } else {
-            log.warn("JWT Token does not begin with Bearer String");
         }
 
-        // Once we get the token, validate it.
+        // Validate & set context
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtTokenUtil.validateToken(jwtToken)) {
                 String role = jwtTokenUtil.getRoleFromToken(jwtToken);
-                
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    username,
-                    null,
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
-                );
+
+                UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                    );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
         chain.doFilter(request, response);
     }
 }

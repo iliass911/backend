@@ -1,4 +1,4 @@
-package com.example.backend;
+package com.example.backend; // Replace with your actual package
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

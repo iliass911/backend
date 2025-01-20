@@ -13,12 +13,13 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class User {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String username;
+    private String username; 
 
     @Column(nullable = false)
     private String password;
@@ -26,11 +27,8 @@ public class User {
     @Column(unique = true, nullable = false)
     private String matricule;
 
-    @Column(nullable = false)
-    private String role; // This field can still store "ADMIN" or "USER" strings
-
-    // Many-to-One relationship with Role entity
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    private Role roleEntity;
+    // Link to the real Role entity
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
 }

@@ -1,50 +1,57 @@
-// UsersController.java
 package com.example.backend.domain.user.controller;
 
-import com.example.backend.common.BaseController;
-import com.example.backend.domain.role.dto.CreateUserRequest;
+import com.example.backend.domain.role.service.RoleService;
+import com.example.backend.domain.security.Module;
+import com.example.backend.domain.security.PermissionType;
 import com.example.backend.domain.user.entity.User;
 import com.example.backend.domain.user.service.UserService;
-import com.example.backend.domain.role.service.PermissionChecker;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-public class UsersController extends BaseController {
-    private final UserService userService;
+@CrossOrigin(origins = "http://localhost:3000") 
+public class UsersController {
 
-    public UsersController(PermissionChecker permissionChecker, UserService userService) {
-        super(permissionChecker);
-        this.userService = userService;  
-    }
+    @Autowired
+    private UserService userService;
 
+    @Autowired
+    private RoleService roleService;
+
+    // For listing all users => require READ on USER
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        checkPermission("USER", "VIEW");
-        return ResponseEntity.ok(userService.getAllUsers());
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.USER, PermissionType.READ)) {
+            throw new AccessDeniedException("You do not have permission to READ users.");
+        }
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody CreateUserRequest request) {
-        checkPermission("USER", "CREATE");
-        return ResponseEntity.ok(userService.createUser(request));
+    // For single user => also require READ on USER
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.USER, PermissionType.READ)) {
+            throw new AccessDeniedException("No permission to READ users.");
+        }
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        checkPermission("USER", "DELETE"); 
-        userService.deleteUser(id);
+    // If you want an endpoint to assign role to user => require UPDATE on USER
+    @PutMapping("/{userId}/role/{roleId}")
+    public ResponseEntity<Void> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.USER, PermissionType.UPDATE)) {
+            throw new AccessDeniedException("No permission to UPDATE user roles.");
+        }
+        userService.assignRoleToUser(userId, roleId);
         return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/{id}/role")
-    public ResponseEntity<User> updateUserRole(
-        @PathVariable Long id,  
-        @RequestParam Long roleId
-    ) {
-        checkPermission("USER", "UPDATE");
-        return ResponseEntity.ok(userService.updateUserRole(id, roleId));
     }
 }

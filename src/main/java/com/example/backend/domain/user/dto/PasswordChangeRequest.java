@@ -1,4 +1,3 @@
-// PasswordChangeRequest.java
 package com.example.backend.domain.user.dto;
 
 import lombok.Data;

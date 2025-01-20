@@ -1,62 +1,68 @@
 package com.example.backend.domain.role.service;
 
-import com.example.backend.domain.role.dto.CreateRoleRequest;
-import com.example.backend.domain.role.entity.Permission;
 import com.example.backend.domain.role.entity.Role;
-import com.example.backend.domain.role.repository.PermissionRepository;
+import com.example.backend.domain.role.entity.RolePermission;
 import com.example.backend.domain.role.repository.RoleRepository;
-import com.example.backend.exception.ResourceNotFoundException;  // Ensure you have this exception class defined
-import lombok.RequiredArgsConstructor;
+import com.example.backend.domain.role.repository.RolePermissionRepository;
+import com.example.backend.domain.security.Module;
+import com.example.backend.domain.security.PermissionType;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class RoleService {
+
     private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
+    private final RolePermissionRepository rolePermissionRepository;
 
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+    public RoleService(RoleRepository roleRepository, RolePermissionRepository rolePermissionRepository) {
+        this.roleRepository = roleRepository;
+        this.rolePermissionRepository = rolePermissionRepository;
     }
 
-    public Role createRole(CreateRoleRequest request) {
+    public Role createRole(String roleName) {
+        // Maybe check if roleName already exists
         Role role = new Role();
-        role.setName(request.getName());
-        role.setDescription(request.getDescription());
-        
-        if (request.getPermissionIds() != null) {
-            Set<Permission> permissions = request.getPermissionIds().stream()
-                .map(id -> permissionRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Permission not found")))
-                .collect(Collectors.toSet());
-            role.setPermissions(permissions);
-        }
-        
+        role.setName(roleName);
         return roleRepository.save(role);
     }
 
-    public void deleteRole(Long id) {
-        roleRepository.deleteById(id);
+    public void assignPermissionToRole(Long roleId, Module module, PermissionType permissionType) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        // Check if it already has that permission
+        boolean exists = rolePermissionRepository.existsByRoleAndModuleAndPermissionType(role, module, permissionType);
+        if (!exists) {
+            RolePermission rp = RolePermission.builder()
+                    .role(role)
+                    .module(module)
+                    .permissionType(permissionType)
+                    .build();
+            rolePermissionRepository.save(rp);
+
+            // Optionally add it to role.getPermissions() if you want it loaded immediately:
+            role.getPermissions().add(rp);
+        }
     }
 
-    public Role updateRole(Long id, CreateRoleRequest request) {
-        Role role = roleRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        
-        role.setName(request.getName());
-        role.setDescription(request.getDescription());
-        
-        if (request.getPermissionIds() != null) {
-            Set<Permission> permissions = request.getPermissionIds().stream()
-                .map(permId -> permissionRepository.findById(permId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Permission not found")))
-                .collect(Collectors.toSet());
-            role.setPermissions(permissions);
-        }
-        
-        return roleRepository.save(role);
+    public boolean roleHasPermission(Role role, Module module, PermissionType permissionType) {
+        if (role == null) return false;
+        return rolePermissionRepository.existsByRoleAndModuleAndPermissionType(role, module, permissionType);
+    }
+
+    public Role getRoleById(Long id) {
+        return roleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+    }
+
+    public Role getRoleByName(String name) {
+        return roleRepository.findByName(name)
+                .orElse(null);
+    }
+
+    public Iterable<Role> getAllRoles() {
+        return roleRepository.findAll();
     }
 }
