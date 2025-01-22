@@ -1,11 +1,16 @@
-// src/main/java/com/example/backend/domain/preventive_maintenance/controller/PackController.java
 package com.sebn.brettbau.domain.preventive_maintenance.controller;
 
 import com.sebn.brettbau.domain.preventive_maintenance.dto.PackDTO;
 import com.sebn.brettbau.domain.preventive_maintenance.service.PackService;
+import com.sebn.brettbau.domain.role.service.RoleService;
+import com.sebn.brettbau.domain.security.Module;
+import com.sebn.brettbau.domain.security.PermissionType;
+import com.sebn.brettbau.domain.user.entity.User;
+import com.sebn.brettbau.domain.user.service.UserService;
 import com.sebn.brettbau.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -17,25 +22,40 @@ public class PackController {
     private final PackService packService;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
     public PackController(PackService packService) {
         this.packService = packService;
     }
 
-    // Get all packs
     @GetMapping
     public List<PackDTO> getAllPacks() {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.READ)) {
+            throw new AccessDeniedException("No permission to view packs.");
+        }
         return packService.getAllPacks();
     }
 
-    // Get packs by site ID
     @GetMapping("/site/{siteId}")
     public List<PackDTO> getPacksBySiteId(@PathVariable Long siteId) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.READ)) {
+            throw new AccessDeniedException("No permission to view packs.");
+        }
         return packService.getPacksBySiteId(siteId);
     }
 
-    // Get pack by ID
     @GetMapping("/{id}")
     public ResponseEntity<PackDTO> getPackById(@PathVariable Long id) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.READ)) {
+            throw new AccessDeniedException("No permission to view packs.");
+        }
         try {
             PackDTO packDTO = packService.getPackById(id);
             return ResponseEntity.ok(packDTO);
@@ -44,16 +64,22 @@ public class PackController {
         }
     }
 
-    // Create new pack
     @PostMapping
     public ResponseEntity<PackDTO> createPack(@Valid @RequestBody PackDTO packDTO) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.CREATE)) {
+            throw new AccessDeniedException("No permission to create packs.");
+        }
         PackDTO createdPack = packService.createPack(packDTO);
         return ResponseEntity.ok(createdPack);
     }
 
-    // Update existing pack
     @PutMapping("/{id}")
     public ResponseEntity<PackDTO> updatePack(@PathVariable Long id, @Valid @RequestBody PackDTO packDTO) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.UPDATE)) {
+            throw new AccessDeniedException("No permission to update packs.");
+        }
         try {
             PackDTO updatedPack = packService.updatePack(id, packDTO);
             return ResponseEntity.ok(updatedPack);
@@ -62,9 +88,12 @@ public class PackController {
         }
     }
 
-    // Delete pack
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePack(@PathVariable Long id) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.MAINTENANCE, PermissionType.DELETE)) {
+            throw new AccessDeniedException("No permission to delete packs.");
+        }
         try {
             packService.deletePack(id);
             return ResponseEntity.ok().build();
