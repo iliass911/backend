@@ -22,6 +22,24 @@ public class BoardFamily {
     private String familyName;
 
     @Column(nullable = false)
+    private String projet;
+
+    @Column(nullable = false)
+    private String side;
+
+    @Column(nullable = false)
+    private String fbType2;
+
+    @Column(nullable = false)
+    private String fbType3;
+
+    @Column(nullable = false)
+    private String fbSize;
+
+    @Column(nullable = false)
+    private String derivate;
+
+    @Column(nullable = false)
     private Integer boardCount;
 
     @Column(nullable = false)

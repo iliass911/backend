@@ -15,20 +15,21 @@ public class InventoryItem {
     private Long id;
 
     @Column(nullable = false)
-    private String refCode; 
+    private String refCode;  // REF
 
     @Column(nullable = false)
-    private String site;     
+    private String site;     // SITE
 
-    private String type;    
-    private Integer quantity; 
-    private String place;    
-    private String unit;    
-    private Double price;   
+    private String type;     // Type
+    private Integer quantity; // QUANTITY
+    private String place;    // PLACE
+    private String unit;     // UNIT
+    private Double price;    // PRICE
 
     @Column
-    private String sezamNumber; 
-    
+    private String sezamNumber;  // New field sezamNumber
+
+    // TOTAL_PRICE is computed, not stored:
     @Transient
     public Double getTotalPrice() {
         if (price != null && quantity != null) {

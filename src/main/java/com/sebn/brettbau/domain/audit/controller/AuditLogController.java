@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @CrossOrigin
 public class AuditLogController {
-
+    
     private final AuditLogService auditLogService;
     private final UserService userService;
     private final RoleService roleService;
@@ -32,14 +32,17 @@ public class AuditLogController {
     @GetMapping
     public ResponseEntity<Page<AuditLog>> getAuditLogs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        // Check READ permission for AUDIT_LOG module
-        User currentUser = userService.getCurrentUser();
-        if (!roleService.roleHasPermission(currentUser.getRole(), Module.AUDIT_LOG, PermissionType.READ)) {
-            throw new AccessDeniedException("No permission to READ audit logs.");
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader(value = "Internal-Call", required = false) String internalCall) {
+            
+        // Skip permission check for internal calls
+        if (internalCall == null) {
+            User currentUser = userService.getCurrentUser();
+            if (!roleService.roleHasPermission(currentUser.getRole(), Module.AUDIT, PermissionType.READ)) {
+                throw new AccessDeniedException("You do not have permission to READ audit logs.");
+            }
         }
-
+        
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         return ResponseEntity.ok(auditLogService.getAuditLogs(pageable));
     }
@@ -49,14 +52,17 @@ public class AuditLogController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        // Check READ permission for AUDIT_LOG module
-        User currentUser = userService.getCurrentUser();
-        if (!roleService.roleHasPermission(currentUser.getRole(), Module.AUDIT_LOG, PermissionType.READ)) {
-            throw new AccessDeniedException("No permission to READ audit logs.");
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader(value = "Internal-Call", required = false) String internalCall) {
+            
+        // Skip permission check for internal calls
+        if (internalCall == null) {
+            User currentUser = userService.getCurrentUser();
+            if (!roleService.roleHasPermission(currentUser.getRole(), Module.AUDIT, PermissionType.READ)) {
+                throw new AccessDeniedException("You do not have permission to READ audit logs.");
+            }
         }
-
+        
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         return ResponseEntity.ok(auditLogService.getAuditLogsByDateRange(start, end, pageable));
     }
