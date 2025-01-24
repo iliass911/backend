@@ -2,6 +2,7 @@
 <section name="Workbench">
 	<section name="MavenProjectImportWizardPage">
 		<list key="rootDirectory">
+			<item value="C:\Users\illo\Desktop\work\my-app-master\ilias-backend-main"/>
 			<item value="C:\Users\illo\Desktop\ilias-app - Copy\ilias-backend-main"/>
 		</list>
 		<list key="projectNameTemplate">

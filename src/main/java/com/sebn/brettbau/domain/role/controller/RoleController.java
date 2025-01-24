@@ -16,13 +16,22 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:3000")
 public class RoleController {
 
-    @Autowired
-    private RoleService roleService;
+    private final RoleService roleService;
+    private final UserService userService;
 
     @Autowired
-    private UserService userService;
+    public RoleController(RoleService roleService, UserService userService) {
+        this.roleService = roleService;
+        this.userService = userService;
+    }
 
-    // Create a new role => require CREATE on ROLE
+    /**
+     * Creates a new role.
+     * Requires CREATE permission on the ROLE module.
+     *
+     * @param roleName the name of the new role
+     * @return ResponseEntity containing the created role
+     */
     @PostMapping("/create")
     public ResponseEntity<Role> createRole(@RequestParam String roleName) {
         User currentUser = userService.getCurrentUser();
@@ -33,12 +42,20 @@ public class RoleController {
         return ResponseEntity.ok(newRole);
     }
 
-    // Assign permission => require UPDATE on ROLE
+    /**
+     * Assigns a permission to a role.
+     * Requires UPDATE permission on the ROLE module.
+     *
+     * @param roleId         the ID of the role
+     * @param module         the module to assign the permission to
+     * @param permissionType the type of permission
+     * @return ResponseEntity with a success message
+     */
     @PostMapping("/{roleId}/permissions")
     public ResponseEntity<String> assignPermission(
-        @PathVariable Long roleId,
-        @RequestParam Module module,
-        @RequestParam PermissionType permissionType
+            @PathVariable Long roleId,
+            @RequestParam Module module,
+            @RequestParam PermissionType permissionType
     ) {
         User currentUser = userService.getCurrentUser();
         if (!roleService.roleHasPermission(currentUser.getRole(), Module.ROLE, PermissionType.UPDATE)) {
@@ -48,23 +65,38 @@ public class RoleController {
         return ResponseEntity.ok("Permission assigned successfully");
     }
 
-    // List all roles => require READ on ROLE
+    /**
+     * Retrieves all roles.
+     * Requires READ permission on the ROLE module.
+     *
+     * @return ResponseEntity containing all roles
+     */
     @GetMapping
     public ResponseEntity<Iterable<Role>> getAllRoles() {
         User currentUser = userService.getCurrentUser();
         if (!roleService.roleHasPermission(currentUser.getRole(), Module.ROLE, PermissionType.READ)) {
             throw new AccessDeniedException("No permission to READ roles.");
         }
-        return ResponseEntity.ok(roleService.getAllRoles());
+        Iterable<Role> roles = roleService.getAllRoles();
+        return ResponseEntity.ok(roles);
     }
 
-    // Get role by ID => require READ on ROLE
+    /**
+     * Retrieves a role by its ID.
+     * Requires READ permission on the ROLE module.
+     *
+     * @param roleId the ID of the role
+     * @return ResponseEntity containing the role
+     */
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
         User currentUser = userService.getCurrentUser();
         if (!roleService.roleHasPermission(currentUser.getRole(), Module.ROLE, PermissionType.READ)) {
             throw new AccessDeniedException("No permission to READ roles.");
         }
-        return ResponseEntity.ok(roleService.getRoleById(roleId));
+        Role role = roleService.getRoleById(roleId);
+        return ResponseEntity.ok(role);
     }
+
+    // Additional endpoints can be added here as needed, ensuring appropriate permission checks.
 }
