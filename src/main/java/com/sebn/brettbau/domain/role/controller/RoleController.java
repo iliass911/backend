@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for managing roles.
+ */
 @RestController
 @RequestMapping("/api/roles")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -63,6 +66,29 @@ public class RoleController {
         }
         roleService.assignPermissionToRole(roleId, module, permissionType);
         return ResponseEntity.ok("Permission assigned successfully");
+    }
+
+    /**
+     * Removes a permission from a role.
+     * Requires DELETE permission on the ROLE module.
+     *
+     * @param roleId         the ID of the role
+     * @param module         the module to remove the permission from
+     * @param permissionType the type of permission
+     * @return ResponseEntity with a success message
+     */
+    @DeleteMapping("/{roleId}/permissions")
+    public ResponseEntity<String> removePermission(
+            @PathVariable Long roleId,
+            @RequestParam Module module,
+            @RequestParam PermissionType permissionType
+    ) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.ROLE, PermissionType.DELETE)) {
+            throw new AccessDeniedException("No permission to DELETE role permissions.");
+        }
+        roleService.removePermissionFromRole(roleId, module, permissionType);
+        return ResponseEntity.ok("Permission removed successfully");
     }
 
     /**

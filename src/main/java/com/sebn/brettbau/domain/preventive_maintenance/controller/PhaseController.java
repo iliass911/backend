@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.preventive_maintenance.controller;
 
-import com.sebn.brettbau.domain.preventive_maintenance.dto.ProjectDTO;
-import com.sebn.brettbau.domain.preventive_maintenance.service.ProjectService;
+import com.sebn.brettbau.domain.preventive_maintenance.dto.PhaseDTO;
+import com.sebn.brettbau.domain.preventive_maintenance.service.PhaseService;
 import com.sebn.brettbau.domain.role.service.RoleService;
 import com.sebn.brettbau.domain.security.Module;
 import com.sebn.brettbau.domain.security.PermissionType;
@@ -15,38 +15,42 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping("/api/phases")
 @CrossOrigin(
     origins = "http://localhost:3000",
     allowedHeaders = {
-        "Origin", 
-        "Content-Type", 
-        "Accept", 
+        "Origin",
+        "Content-Type",
+        "Accept",
         "Authorization",
         "X-Requesting-Module"
     }
 )
-public class ProjectController {
+public class PhaseController {
 
-    private final ProjectService projectService;
+    private final PhaseService phaseService;
     private final RoleService roleService;
     private final UserService userService;
 
     @Autowired
-    public ProjectController(ProjectService projectService, RoleService roleService, UserService userService) {
-        this.projectService = projectService;
+    public PhaseController(
+            PhaseService phaseService,
+            RoleService roleService,
+            UserService userService
+    ) {
+        this.phaseService = phaseService;
         this.roleService = roleService;
         this.userService = userService;
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectDTO>> getAllProjects(
+    public ResponseEntity<List<PhaseDTO>> getAllPhases(
         @RequestHeader(value = "X-Requesting-Module", required = false) String requestingModule
     ) {
         try {
-            verifyPermission(PermissionType.READ, requestingModule, Module.PROJECT);
-            List<ProjectDTO> projects = projectService.getAllProjects();
-            return ResponseEntity.ok(projects);
+            verifyPermission(PermissionType.READ, requestingModule, Module.PHASE);
+            List<PhaseDTO> phases = phaseService.getAllPhases();
+            return ResponseEntity.ok(phases);
         } catch (AccessDeniedException ade) {
             return ResponseEntity.status(403).body(null);
         } catch (Exception e) {
@@ -55,14 +59,14 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectDTO> getProjectById(
+    public ResponseEntity<PhaseDTO> getPhaseById(
         @PathVariable Long id,
         @RequestHeader(value = "X-Requesting-Module", required = false) String requestingModule
     ) {
         try {
-            verifyPermission(PermissionType.READ, requestingModule, Module.PROJECT);
-            ProjectDTO project = projectService.getProjectById(id);
-            return ResponseEntity.ok(project);
+            verifyPermission(PermissionType.READ, requestingModule, Module.PHASE);
+            PhaseDTO dto = phaseService.getPhaseById(id);
+            return ResponseEntity.ok(dto);
         } catch (AccessDeniedException ade) {
             return ResponseEntity.status(403).body(null);
         } catch (Exception e) {
@@ -71,14 +75,14 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<ProjectDTO> createProject(
-        @RequestBody ProjectDTO dto,
+    public ResponseEntity<PhaseDTO> createPhase(
+        @RequestBody PhaseDTO dto,
         @RequestHeader(value = "X-Requesting-Module", required = false) String requestingModule
     ) {
         try {
-            verifyPermission(PermissionType.CREATE, requestingModule, Module.PROJECT);
-            ProjectDTO createdProject = projectService.createProject(dto);
-            return ResponseEntity.ok(createdProject);
+            verifyPermission(PermissionType.CREATE, requestingModule, Module.PHASE);
+            PhaseDTO created = phaseService.createPhase(dto);
+            return ResponseEntity.ok(created);
         } catch (AccessDeniedException ade) {
             return ResponseEntity.status(403).body(null);
         } catch (Exception e) {
@@ -87,15 +91,15 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProjectDTO> updateProject(
+    public ResponseEntity<PhaseDTO> updatePhase(
         @PathVariable Long id,
-        @RequestBody ProjectDTO dto,
+        @RequestBody PhaseDTO dto,
         @RequestHeader(value = "X-Requesting-Module", required = false) String requestingModule
     ) {
         try {
-            verifyPermission(PermissionType.UPDATE, requestingModule, Module.PROJECT);
-            ProjectDTO updatedProject = projectService.updateProject(id, dto);
-            return ResponseEntity.ok(updatedProject);
+            verifyPermission(PermissionType.UPDATE, requestingModule, Module.PHASE);
+            PhaseDTO updated = phaseService.updatePhase(id, dto);
+            return ResponseEntity.ok(updated);
         } catch (AccessDeniedException ade) {
             return ResponseEntity.status(403).body(null);
         } catch (Exception e) {
@@ -104,13 +108,13 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(
+    public ResponseEntity<Void> deletePhase(
         @PathVariable Long id,
         @RequestHeader(value = "X-Requesting-Module", required = false) String requestingModule
     ) {
         try {
-            verifyPermission(PermissionType.DELETE, requestingModule, Module.PROJECT);
-            projectService.deleteProject(id);
+            verifyPermission(PermissionType.DELETE, requestingModule, Module.PHASE);
+            phaseService.deletePhase(id);
             return ResponseEntity.noContent().build();
         } catch (AccessDeniedException ade) {
             return ResponseEntity.status(403).build();
@@ -121,8 +125,6 @@ public class ProjectController {
 
     private void verifyPermission(PermissionType permissionType, String requestingModule, Module targetModule) {
         User currentUser = userService.getCurrentUser();
-
-        // parse requestingModule -> callingModule
         Module callingModule = null;
         if (requestingModule != null) {
             try {

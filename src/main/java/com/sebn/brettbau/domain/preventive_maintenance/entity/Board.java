@@ -144,6 +144,7 @@ public class Board {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_user_id")
     private User assignedUser;
+    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pack_id")

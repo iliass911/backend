@@ -46,7 +46,7 @@ public class BoardFamily {
     private LocalDateTime createdAt;
 
     @Builder.Default
-    @OneToMany(mappedBy = "family", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "family", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Board> boards = new HashSet<>();
 
     @PrePersist
@@ -57,12 +57,22 @@ public class BoardFamily {
         }
     }
 
+    /**
+     * Adds a board to the family.
+     *
+     * @param board The board to add.
+     */
     public void addBoard(Board board) {
         boards.add(board);
         board.setFamily(this);
         boardCount = boards.size();
     }
 
+    /**
+     * Removes a board from the family.
+     *
+     * @param board The board to remove.
+     */
     public void removeBoard(Board board) {
         boards.remove(board);
         board.setFamily(null);

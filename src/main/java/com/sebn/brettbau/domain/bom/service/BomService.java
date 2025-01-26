@@ -5,14 +5,14 @@ import com.sebn.brettbau.domain.bom.dto.BomLineDTO;
 import com.sebn.brettbau.domain.bom.entity.Bom;
 import com.sebn.brettbau.domain.bom.entity.BomLine;
 import com.sebn.brettbau.domain.bom.mapper.BomMapper;
-import com.sebn.brettbau.domain.bom.repository.BomRepository;
 import com.sebn.brettbau.domain.bom.repository.BomLineRepository;
-import com.sebn.brettbau.domain.preventive_maintenance.entity.Board;
-import com.sebn.brettbau.domain.preventive_maintenance.entity.BoardFamily;
-import com.sebn.brettbau.domain.preventive_maintenance.repository.BoardRepository;
-import com.sebn.brettbau.domain.preventive_maintenance.repository.BoardFamilyRepository;
+import com.sebn.brettbau.domain.bom.repository.BomRepository;
 import com.sebn.brettbau.domain.inventory.entity.InventoryItem;
 import com.sebn.brettbau.domain.inventory.repository.InventoryItemRepository;
+import com.sebn.brettbau.domain.preventive_maintenance.entity.Board;
+import com.sebn.brettbau.domain.preventive_maintenance.entity.BoardFamily;
+import com.sebn.brettbau.domain.preventive_maintenance.repository.BoardFamilyRepository;
+import com.sebn.brettbau.domain.preventive_maintenance.repository.BoardRepository;
 import com.sebn.brettbau.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +35,14 @@ public class BomService {
     private final InventoryItemRepository inventoryItemRepository;
     private final BomMapper bomMapper;
 
-    // Individual Board Methods
-    
+    // Existing Methods ...
+
+    /**
+     * Creates a new BOM for a specific board.
+     *
+     * @param boardId The ID of the board.
+     * @return The created BomDTO.
+     */
     @Transactional
     public BomDTO createBom(Long boardId) {
         Board board = boardRepository.findById(boardId)
@@ -53,23 +60,43 @@ public class BomService {
         return bomMapper.toDTO(bomRepository.save(bom));
     }
 
+    /**
+     * Retrieves a BOM by board ID.
+     *
+     * @param boardId The ID of the board.
+     * @return The BomDTO.
+     */
     public BomDTO getBomByBoardId(Long boardId) {
         Bom bom = bomRepository.findByBoardId(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found for board id: " + boardId));
         return bomMapper.toDTO(bom);
     }
 
+    /**
+     * Retrieves a BOM by BOM ID.
+     *
+     * @param bomId The ID of the BOM.
+     * @return The BomDTO.
+     */
     public BomDTO getBom(Long bomId) {
         Bom bom = bomRepository.findById(bomId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found with id: " + bomId));
         return bomMapper.toDTO(bom);
     }
 
+    /**
+     * Adds or updates BOM lines for a specific BOM.
+     *
+     * @param bomId        The ID of the BOM.
+     * @param bomLineDTOs  The set of BOM line DTOs.
+     * @return The updated BomDTO.
+     */
     @Transactional
     public BomDTO addOrUpdateBomLines(Long bomId, Set<BomLineDTO> bomLineDTOs) {
         Bom bom = bomRepository.findById(bomId)
                 .orElseThrow(() -> new ResourceNotFoundException("BOM not found with id: " + bomId));
 
+        // Clear existing BOM lines
         if (bom.getBomLines() != null && !bom.getBomLines().isEmpty()) {
             bom.getBomLines().forEach(line -> {
                 line.setBom(null);
@@ -132,6 +159,11 @@ public class BomService {
         return bomMapper.toDTO(bomRepository.save(bom));
     }
 
+    /**
+     * Deletes a BOM by its ID.
+     *
+     * @param bomId The ID of the BOM to delete.
+     */
     @Transactional
     public void deleteBom(Long bomId) {
         Bom bom = bomRepository.findById(bomId)
@@ -152,6 +184,12 @@ public class BomService {
 
     // Family Methods
 
+    /**
+     * Creates BOMs for all boards in a specific family.
+     *
+     * @param familyId The ID of the BoardFamily.
+     * @return A list of created BomDTOs.
+     */
     @Transactional
     public List<BomDTO> createBomForFamily(Long familyId) {
         BoardFamily family = boardFamilyRepository.findById(familyId)
@@ -179,6 +217,12 @@ public class BomService {
         return createdBoms;
     }
 
+    /**
+     * Retrieves a template BOM for a specific family.
+     *
+     * @param familyId The ID of the BoardFamily.
+     * @return The BomDTO.
+     */
     public BomDTO getBomByFamilyId(Long familyId) {
         BoardFamily family = boardFamilyRepository.findById(familyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Family not found with id: " + familyId));
@@ -202,6 +246,13 @@ public class BomService {
         return bomMapper.toDTO(templateBom);
     }
 
+    /**
+     * Adds or updates BOM lines for all BOMs within a family.
+     *
+     * @param familyId     The ID of the BoardFamily.
+     * @param bomLineDTOs  The set of BOM line DTOs.
+     * @return A list of updated BomDTOs.
+     */
     @Transactional
     public List<BomDTO> addOrUpdateFamilyBomLines(Long familyId, Set<BomLineDTO> bomLineDTOs) {
         BoardFamily family = boardFamilyRepository.findById(familyId)
@@ -230,6 +281,11 @@ public class BomService {
         return updatedBoms;
     }
 
+    /**
+     * Deletes all BOMs associated with a specific family.
+     *
+     * @param familyId The ID of the BoardFamily.
+     */
     @Transactional
     public void deleteFamilyBoms(Long familyId) {
         BoardFamily family = boardFamilyRepository.findById(familyId)
@@ -240,5 +296,61 @@ public class BomService {
             bomRepository.findByBoardId(board.getId())
                     .ifPresent(bom -> deleteBom(bom.getId()));
         }
+    }
+
+    // New Method: saveBOMLines
+
+    /**
+     * Saves a list of BOM lines for a specific BoardFamily.
+     *
+     * @param family The BoardFamily entity.
+     * @param lines  The list of BomLineDTOs to save.
+     * @return The list of saved BomLineDTOs.
+     */
+    @Transactional
+    public List<BomLineDTO> saveBOMLines(BoardFamily family, List<BomLineDTO> lines) {
+        BoardFamily existingFamily = boardFamilyRepository.findById(family.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("BoardFamily not found with id: " + family.getId()));
+
+        final Bom templateBom = bomRepository.save(Bom.builder()
+                .totalCost(0.0)
+                .bomLines(new HashSet<>())
+                .build());
+
+        List<BomLine> bomLines = lines.stream()
+                .map(dto -> BomLine.builder()
+                    .category(dto.getCategory())
+                    .componentName(dto.getComponentName())
+                    .quantity(dto.getQuantity())
+                    .unitPrice(dto.getUnitPrice())
+                    .bom(templateBom)
+                    .build())
+                .collect(Collectors.toList());
+
+        List<BomLine> savedLines = bomLineRepository.saveAll(bomLines);
+
+        return savedLines.stream()
+                .map(line -> BomLineDTO.builder()
+                        .id(line.getId().toString())
+                        .category(line.getCategory())
+                        .componentName(line.getComponentName())
+                        .quantity(line.getQuantity())
+                        .unitPrice(line.getUnitPrice())
+                        .build())
+                .collect(Collectors.toList());
+    }
+    /**
+     * Overloaded method to save BOM lines using family ID.
+     *
+     * @param familyId The ID of the BoardFamily.
+     * @param lines    The list of BomLineDTOs to save.
+     * @return The list of saved BomLineDTOs.
+     */
+    @Transactional
+    public List<BomLineDTO> saveBOMLines(Long familyId, List<BomLineDTO> lines) {
+        BoardFamily family = boardFamilyRepository.findById(familyId)
+                .orElseThrow(() -> new ResourceNotFoundException("BoardFamily not found with id: " + familyId));
+
+        return saveBOMLines(family, lines);
     }
 }
