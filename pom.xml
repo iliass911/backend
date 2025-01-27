@@ -20,6 +20,10 @@
     
     <properties>
         <java.version>17</java.version>
+        <!-- Specify Flyway version to avoid conflicts -->
+        <flyway.version>9.16.3</flyway.version>
+        <lombok.version>1.18.26</lombok.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
     
     <dependencies>
@@ -28,7 +32,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
+        
         <!-- Spring Boot Starter Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,12 +52,6 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-tomcat</artifactId>
-  <scope>provided</scope>
-</dependency>
-
-        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson if you prefer -->
             <version>0.11.5</version>
@@ -66,6 +64,18 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         
+        <!-- Flyway Dependencies -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
         <!-- SpringDoc OpenAPI UI (Replace Springfox) -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -84,7 +94,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -104,7 +114,7 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
-            <version>1.5.5.Final</version>
+            <version>${mapstruct.version}</version>
         </dependency>
 
         <!-- Optional: Spring Boot DevTools -->
@@ -136,7 +146,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -145,13 +155,13 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.24</version>
+                            <version>${lombok.version}</version>
                         </path>
                         <!-- MapStruct Annotation Processor -->
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
-                            <version>1.5.5.Final</version>
+                            <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -160,6 +170,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
                     <excludes>
                         <exclude>
