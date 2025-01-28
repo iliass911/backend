@@ -6,20 +6,17 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class CorsConfig {
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // Adjust the path pattern as needed
-                        .allowedOrigins("http://localhost:3000") // Specify allowed origins
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Specify allowed HTTP methods
-                        .allowedHeaders("Origin", "Content-Type", "Accept", "Authorization", "X-Requesting-Module") // Specify allowed headers
-                        .allowCredentials(true) // Allow credentials (cookies, authorization headers, etc.)
-                        .maxAge(3600); // Optional: Set how long the response from a pre-flight request can be cached
-            }
-        };
-    }
+public class CorsConfig implements WebMvcConfigurer {
+	@Override
+	public void addCorsMappings(CorsRegistry registry) {
+	    registry.addMapping("/**")
+	    .allowedOrigins(
+	    	    "http://localhost:3000",
+	    	    "http://10.150.2.201:3000",
+	    	    "http://10.150.2.201:8080"
+	    	)
+	        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+	        .allowedHeaders("*")
+	        .allowCredentials(true);
+	}
 }
