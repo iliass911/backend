@@ -8,3 +8,4 @@ import org.springframework.stereotype.Repository;
 public interface WeeklyStatusReportRepository extends JpaRepository<WeeklyStatusReport, Long> {
     // Add custom queries if needed, for filtering, etc.
 }
+

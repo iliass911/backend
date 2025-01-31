@@ -17,7 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -296,3 +296,4 @@ public class ChecklistController {
         }
     }
 }
+

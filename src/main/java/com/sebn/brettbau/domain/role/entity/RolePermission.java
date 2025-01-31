@@ -3,7 +3,7 @@ package com.sebn.brettbau.domain.role.entity;
 import com.sebn.brettbau.domain.security.Module;
 import com.sebn.brettbau.domain.security.PermissionType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 @Entity
@@ -34,3 +34,4 @@ public class RolePermission {
     @Column(nullable = false)
     private PermissionType permissionType;
 }
+

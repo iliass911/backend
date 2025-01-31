@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.bom.entity;
 
 import lombok.*;
-import jakarta.persistence.*; // Updated import
+import javax.persistence.*; // Updated import
 // import javax.persistence.*; // Remove or comment out if present
 import com.sebn.brettbau.domain.bom.entity.BomLine;
 
@@ -28,3 +28,4 @@ public class BomLineUnit {
     @Column(name = "unit_name", nullable = false)
     private String unitName;
 }
+

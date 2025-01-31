@@ -2,7 +2,7 @@
 
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 import java.util.Set;
 
@@ -28,3 +28,4 @@ public class Site {
     // Getters and Setters
     // ...
 }
+

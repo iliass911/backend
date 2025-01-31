@@ -60,3 +60,4 @@ public class U6Service {
         u6Repository.deleteById(id);
     }
 }
+

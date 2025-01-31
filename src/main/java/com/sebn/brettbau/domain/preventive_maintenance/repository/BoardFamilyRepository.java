@@ -9,3 +9,4 @@ public interface BoardFamilyRepository extends JpaRepository<BoardFamily, Long> 
     // Optionally, add methods to check for existing family names
     boolean existsByFamilyName(String familyName);
 }
+

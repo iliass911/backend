@@ -62,3 +62,4 @@ public class MaintenanceInterventionService {
         repository.deleteById(id);
     }
 }
+

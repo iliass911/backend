@@ -354,3 +354,4 @@ public class BomService {
         return saveBOMLines(family, lines);
     }
 }
+

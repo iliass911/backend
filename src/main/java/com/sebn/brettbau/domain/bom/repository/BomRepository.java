@@ -10,3 +10,4 @@ import java.util.Optional;
 public interface BomRepository extends JpaRepository<Bom, Long> {
     Optional<Bom> findByBoardId(Long boardId);
 }
+

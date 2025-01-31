@@ -8,3 +8,4 @@ import org.springframework.stereotype.Repository;
 public interface MaintenanceInterventionRepository extends JpaRepository<MaintenanceIntervention, Long> {
     // Add custom queries if needed
 }
+

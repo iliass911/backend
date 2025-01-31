@@ -7,3 +7,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface U6Repository extends JpaRepository<U6, Long> {
 }
+

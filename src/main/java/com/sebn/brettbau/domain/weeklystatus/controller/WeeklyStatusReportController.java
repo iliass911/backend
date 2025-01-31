@@ -119,3 +119,4 @@ public class WeeklyStatusReportController {
         return ResponseEntity.noContent().build();
     }
 }
+

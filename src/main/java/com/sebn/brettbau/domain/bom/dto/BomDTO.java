@@ -14,3 +14,4 @@ public class BomDTO {
     private Double totalCost;
     private Set<BomLineDTO> bomLines; // Child lines
 }
+

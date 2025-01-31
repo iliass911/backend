@@ -2,7 +2,7 @@
 package com.sebn.brettbau.domain.user.entity;
 
 import com.sebn.brettbau.domain.role.entity.Role;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 @Entity
@@ -32,3 +32,4 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 }
+

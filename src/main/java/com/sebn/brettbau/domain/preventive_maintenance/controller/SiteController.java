@@ -340,3 +340,4 @@ public class SiteController {
 
     // Additional endpoints can be added here with appropriate permission checks.
 }
+

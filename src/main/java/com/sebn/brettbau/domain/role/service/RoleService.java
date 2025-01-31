@@ -194,3 +194,4 @@ public class RoleService {
         return allowedModules != null && allowedModules.contains(targetModule);
     }
 }
+

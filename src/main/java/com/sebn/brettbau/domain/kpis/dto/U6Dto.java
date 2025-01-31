@@ -41,3 +41,4 @@ public class U6Dto {
     public String getWorkplace() { return workplace; }
     public void setWorkplace(String workplace) { this.workplace = workplace; }
 }
+

@@ -9,3 +9,4 @@ import org.springframework.stereotype.Repository;
 public interface ChangeProtocolRepository extends JpaRepository<ChangeProtocol, Long> {
     // Add custom queries if needed
 }
+

@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.changemanagement.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.sebn.brettbau.domain.preventive_maintenance.entity.Project;  // Import the Project entity
@@ -39,3 +39,4 @@ public class ChangeProtocol {
 
     // Additional fields for metadata if needed
 }
+

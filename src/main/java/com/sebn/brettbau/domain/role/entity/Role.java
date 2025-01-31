@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.role.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
@@ -36,3 +36,4 @@ public class Role {
     @JsonIgnoreProperties({"role"})  // Tells Jackson not to serialize the 'role' field of RolePermission
     private Set<RolePermission> permissions = new HashSet<>();
 }
+

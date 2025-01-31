@@ -35,3 +35,4 @@ public interface BoardMapper {
     @Mapping(target = "bom", ignore = true)
     void updateEntityFromDto(BoardDTO dto, @MappingTarget Board entity);
 }
+

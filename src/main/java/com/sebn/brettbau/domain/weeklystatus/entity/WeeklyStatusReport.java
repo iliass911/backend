@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.weeklystatus.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -28,3 +28,4 @@ public class WeeklyStatusReport {
     private String project;            // Project filter field (e.g., BATTERIE MB21, Golf A8)
     private String month;              // Month filter field (e.g., janvier, décembre)
 }
+

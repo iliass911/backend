@@ -18,3 +18,4 @@ public interface ChecklistRepository extends JpaRepository<Checklist, Long> {
     
     List<Checklist> findByTechnicianName(String technicianName);
 }
+

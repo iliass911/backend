@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.preventive_maintenance.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
@@ -32,3 +32,4 @@ public class BoardFamilyDTO {
 
     private String createdAt;
 }
+

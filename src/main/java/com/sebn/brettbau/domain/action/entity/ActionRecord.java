@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.action.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -32,3 +32,4 @@ public class ActionRecord {
     private String statut;
     private String remarque;
 }
+

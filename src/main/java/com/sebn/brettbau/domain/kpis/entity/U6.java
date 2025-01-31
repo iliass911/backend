@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.kpis.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.LocalDate;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.Objects;
@@ -99,3 +99,4 @@ public class U6 {
         return Objects.hash(date, projet, code, tempsDarret, totalMinute, commentaire, zone, workplace);
     }
 }
+

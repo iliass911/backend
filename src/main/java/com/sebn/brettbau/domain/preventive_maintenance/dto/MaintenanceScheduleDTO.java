@@ -2,7 +2,7 @@
 package com.sebn.brettbau.domain.preventive_maintenance.dto;
 
 import lombok.*;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MaintenanceScheduleDTO {
@@ -20,4 +20,5 @@ public class MaintenanceScheduleDTO {
     @NotNull(message = "Year is mandatory")
     private Integer year;
 }
+
 

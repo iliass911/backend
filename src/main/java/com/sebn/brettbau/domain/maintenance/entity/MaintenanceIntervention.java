@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -29,3 +29,4 @@ public class MaintenanceIntervention {
     private String commentaire;
     private String site;
 }
+

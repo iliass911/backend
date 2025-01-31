@@ -14,3 +14,4 @@ public interface MaintenanceScheduleMapper {
 
     MaintenanceSchedule toEntity(MaintenanceScheduleDTO scheduleDTO);
 }
+

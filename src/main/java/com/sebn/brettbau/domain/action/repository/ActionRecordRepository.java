@@ -8,3 +8,4 @@ import org.springframework.stereotype.Repository;
 public interface ActionRecordRepository extends JpaRepository<ActionRecord, Long> {
     // Add custom queries if needed
 }
+

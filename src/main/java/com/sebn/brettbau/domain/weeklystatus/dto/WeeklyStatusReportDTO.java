@@ -16,3 +16,4 @@ public class WeeklyStatusReportDTO {
     private String project;
     private String month;
 }
+

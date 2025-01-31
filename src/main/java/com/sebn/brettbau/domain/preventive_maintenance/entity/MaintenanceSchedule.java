@@ -1,7 +1,7 @@
 // src/main/java/com/example/backend/domain/preventive_maintenance/entity/MaintenanceSchedule.java
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 @Entity

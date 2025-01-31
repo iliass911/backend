@@ -1,8 +1,10 @@
 package com.sebn.brettbau.domain.inventory.dto;
 
 import lombok.Data;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Max;
 
 @Data
 public class InventoryItemDTO {
@@ -17,7 +19,16 @@ public class InventoryItemDTO {
     private String type;
 
     @NotNull
+    @Min(0)
     private Integer quantity;
+
+    @NotNull
+    @Min(0)
+    private Integer minQuantity;
+
+    @NotNull
+    @Min(0)
+    private Integer maxQuantity;
 
     private String place;
     private String unit;
@@ -25,8 +36,10 @@ public class InventoryItemDTO {
     @NotNull
     private Double price;
 
-    private String sezamNumber;  // New field sezamNumber
-
-    // totalPrice will be computed by the mapper or after converting from entity
+    private String sezamNumber;
     private Double totalPrice;
+    
+    // New fields for stock status
+    private boolean lowStock;
+    private boolean overStock;
 }

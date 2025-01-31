@@ -1,7 +1,7 @@
 // src/main/java/com/example/backend/domain/preventive_maintenance/entity/Pack.java
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 //Pack.java
@@ -23,3 +23,4 @@ public class Pack {
  @JoinColumn(name = "project_id", nullable = false)
  private Project project;
 }
+

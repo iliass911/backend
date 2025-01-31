@@ -12,3 +12,4 @@ public class SecretKeyGenerator {
         System.out.println("Generated JWT Secret Key: " + base64Key);
     }
 }
+

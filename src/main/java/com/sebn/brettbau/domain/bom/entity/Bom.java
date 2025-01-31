@@ -2,7 +2,7 @@
 package com.sebn.brettbau.domain.bom.entity;
 
 import com.sebn.brettbau.domain.preventive_maintenance.entity.Board;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
@@ -32,3 +32,4 @@ public class Bom {
     // Stores the total cost of the BOM (calculated from lines)
     private Double totalCost;
 }
+

@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.bom.entity;
 
 import com.sebn.brettbau.domain.inventory.entity.InventoryItem;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -90,3 +90,4 @@ public class BomLine {
                 .collect(Collectors.toList());
     }
 }
+

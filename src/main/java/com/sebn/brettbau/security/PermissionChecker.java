@@ -29,3 +29,4 @@ public class PermissionChecker {
         return roleService.roleHasPermission(role, module, permissionType);
     }
 }
+

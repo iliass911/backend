@@ -2,8 +2,8 @@
 package com.sebn.brettbau.domain.preventive_maintenance.dto;
 
 import lombok.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PackDTO {
@@ -18,3 +18,4 @@ public class PackDTO {
     @NotNull(message = "Project ID is mandatory")
     private Long projectId;
 }
+

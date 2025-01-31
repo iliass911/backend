@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.inventory.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 @Entity
@@ -15,26 +15,42 @@ public class InventoryItem {
     private Long id;
 
     @Column(nullable = false)
-    private String refCode;  // REF
+    private String refCode;
 
     @Column(nullable = false)
-    private String site;     // SITE
+    private String site;
 
-    private String type;     // Type
-    private Integer quantity; // QUANTITY
-    private String place;    // PLACE
-    private String unit;     // UNIT
-    private Double price;    // PRICE
+    private String type;
+    
+    @Column(nullable = false)
+    private Integer quantity;
+    
+    @Column(nullable = false)
+    private Integer minQuantity;
+    
+    @Column(nullable = false)
+    private Integer maxQuantity;
+    
+    private String place;
+    private String unit;
+    private Double price;
+    private String sezamNumber;
 
-    @Column
-    private String sezamNumber;  // New field sezamNumber
-
-    // TOTAL_PRICE is computed, not stored:
     @Transient
     public Double getTotalPrice() {
         if (price != null && quantity != null) {
             return price * quantity;
         }
         return 0.0;
+    }
+
+    @Transient
+    public boolean isLowStock() {
+        return quantity != null && minQuantity != null && quantity <= minQuantity;
+    }
+
+    @Transient
+    public boolean isOverStock() {
+        return quantity != null && maxQuantity != null && quantity >= maxQuantity;
     }
 }

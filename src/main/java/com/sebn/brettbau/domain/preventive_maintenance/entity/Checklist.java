@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -40,3 +40,4 @@ public class Checklist {
         createdAt = LocalDateTime.now();
     }
 }
+

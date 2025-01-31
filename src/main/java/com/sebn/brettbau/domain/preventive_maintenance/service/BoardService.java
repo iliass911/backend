@@ -81,3 +81,4 @@ public interface BoardService {
      */
     List<BoardDTO> createBulkBoards(List<BoardDTO> boardDTOs);
 }
+

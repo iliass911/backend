@@ -8,3 +8,4 @@ import org.springframework.stereotype.Repository;
 public interface SiteRepository extends JpaRepository<Site, Long> {
     // Additional query methods (if needed) can be defined here
 }
+

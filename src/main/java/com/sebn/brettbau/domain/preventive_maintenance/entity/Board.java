@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
+import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 import lombok.*;
 import com.sebn.brettbau.domain.user.entity.User;
 import com.sebn.brettbau.domain.bom.entity.Bom;
@@ -163,3 +163,4 @@ public class Board {
     @JoinColumn(name = "family_id")
     private BoardFamily family;
 }
+

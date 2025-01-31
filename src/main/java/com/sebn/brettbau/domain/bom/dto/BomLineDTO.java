@@ -69,3 +69,4 @@ public class BomLineDTO {
         return id != null && id.startsWith("temp-");
     }
 }
+

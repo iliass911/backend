@@ -5,12 +5,15 @@ import com.sebn.brettbau.domain.security.Module;
 import com.sebn.brettbau.domain.security.PermissionType;
 import com.sebn.brettbau.domain.user.entity.User;
 import com.sebn.brettbau.domain.user.service.UserService;
+import com.sebn.brettbau.domain.user.dto.PasswordChangeRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,12 +29,6 @@ public class UsersController {
         this.roleService = roleService;
     }
 
-    /**
-     * Retrieves all users.
-     * Requires READ permission on the USER module.
-     *
-     * @return ResponseEntity containing the list of users
-     */
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         User currentUser = userService.getCurrentUser();
@@ -42,13 +39,6 @@ public class UsersController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * Retrieves a user by ID.
-     * Requires READ permission on the USER module.
-     *
-     * @param id the ID of the user
-     * @return ResponseEntity containing the user
-     */
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         User currentUser = userService.getCurrentUser();
@@ -59,14 +49,6 @@ public class UsersController {
         return ResponseEntity.ok(user);
     }
 
-    /**
-     * Assigns a role to a user.
-     * Requires UPDATE permission on the USER module.
-     *
-     * @param userId the ID of the user
-     * @param roleId the ID of the role to assign
-     * @return ResponseEntity with HTTP status
-     */
     @PutMapping("/{userId}/role/{roleId}")
     public ResponseEntity<Void> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
         User currentUser = userService.getCurrentUser();
@@ -77,5 +59,25 @@ public class UsersController {
         return ResponseEntity.ok().build();
     }
 
-    // Additional endpoints can be added here as needed, ensuring appropriate permission checks.
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+        @RequestBody PasswordChangeRequest request,
+        @RequestHeader("Authorization") String token) {
+        
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        
+        try {
+            User currentUser = userService.getCurrentUser();
+            userService.changePassword(currentUser.getId(), request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok().body(new HashMap<String, String>() {{
+                put("message", "Password updated successfully");
+            }});
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new HashMap<String, String>() {{
+                put("message", e.getMessage());
+            }});
+        }
+    }
 }

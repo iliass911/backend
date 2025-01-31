@@ -95,3 +95,4 @@ public class WeeklyStatusReportService {
         repository.deleteById(id);
     }
 }
+

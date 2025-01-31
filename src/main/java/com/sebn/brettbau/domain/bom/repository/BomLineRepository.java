@@ -9,3 +9,4 @@ import org.springframework.stereotype.Repository;
 public interface BomLineRepository extends JpaRepository<BomLine, Long> {
     // Additional queries if needed
 }
+

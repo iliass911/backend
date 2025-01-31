@@ -7,3 +7,4 @@ public enum PermissionType {
     UPDATE,  // e.g., "PUT"
     DELETE   // e.g., "DELETE"
 }
+

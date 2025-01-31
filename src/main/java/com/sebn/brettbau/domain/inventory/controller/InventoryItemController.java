@@ -104,3 +104,4 @@ public class InventoryItemController {
         return ResponseEntity.noContent().build();
     }
 }
+

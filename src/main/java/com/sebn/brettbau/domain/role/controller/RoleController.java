@@ -126,3 +126,4 @@ public class RoleController {
 
     // Additional endpoints can be added here as needed, ensuring appropriate permission checks.
 }
+

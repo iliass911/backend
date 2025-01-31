@@ -48,3 +48,4 @@ public class BoardDTO {
     private String storagePlace;
     private LocalDate creationDate;
 }
+

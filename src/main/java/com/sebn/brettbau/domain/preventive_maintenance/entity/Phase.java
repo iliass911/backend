@@ -1,6 +1,6 @@
 package com.sebn.brettbau.domain.preventive_maintenance.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
 @Data
@@ -22,3 +22,4 @@ public class Phase {
     @Column
     private Long projectId;
 }
+

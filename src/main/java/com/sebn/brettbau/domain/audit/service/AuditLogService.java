@@ -4,7 +4,7 @@ package com.sebn.brettbau.domain.audit.service;
 import com.sebn.brettbau.domain.audit.entity.AuditLog;
 import com.sebn.brettbau.domain.audit.repository.AuditLogRepository;
 import com.sebn.brettbau.domain.user.entity.User;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

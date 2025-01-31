@@ -24,9 +24,6 @@ public class UserService {
    private final RoleRepository roleRepository;
    private final AuditLogService auditLogService; // If you have an audit log service
 
-   // If you want to restrict registration to certain matricules:
-   // private final Set<String> allowedMatricules = Set.of("90940", "23", "4501", "90948");
-
    public User getCurrentUser() {
        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
        if (authentication == null || !authentication.isAuthenticated()) {
@@ -39,17 +36,11 @@ public class UserService {
    }
 
    public User registerUser(RegisterRequest registerRequest) throws Exception {
-       // If you want to restrict certain matricules:
-       // if (!allowedMatricules.contains(registerRequest.getMatricule())) {
-       //     throw new Exception("Matricule not allowed to register.");
-       // }
-
        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
            throw new Exception("Username already exists.");
        }
 
        String hashedPassword = BCrypt.hashpw(registerRequest.getPassword(), BCrypt.gensalt());
-       // By default, let's attach them to the "USER" role:
        Role defaultRole = roleRepository.findByName("USER")
                .orElseThrow(() -> new Exception("Role [USER] not found in DB"));
 
@@ -62,7 +53,6 @@ public class UserService {
 
        User savedUser = userRepository.save(user);
 
-       // If you have an audit log:
        if (auditLogService != null) {
            auditLogService.logEvent(
                savedUser,
@@ -93,7 +83,6 @@ public class UserService {
            throw new Exception("Invalid username or password.");
        }
 
-       // Optional: log successful login
        if (auditLogService != null) {
            auditLogService.logEvent(
                user,
@@ -116,9 +105,6 @@ public class UserService {
            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
    }
 
-   /**
-    * Simple method to assign a new role to an existing user.
-    */
    public void assignRoleToUser(Long userId, Long roleId) {
        User user = userRepository.findById(userId)
                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
@@ -129,12 +115,47 @@ public class UserService {
        user.setRole(role);
        userRepository.save(user);
 
-       // Optional: audit log
        if (auditLogService != null) {
            auditLogService.logEvent(
                user,
                "ASSIGN_ROLE",
                String.format("Assigned role %s to user %s", role.getName(), user.getUsername()),
+               "USER",
+               user.getId()
+           );
+       }
+   }
+
+   // Add the new changePassword method
+   public void changePassword(Long userId, String currentPassword, String newPassword) throws Exception {
+       User user = userRepository.findById(userId)
+               .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+       // Verify current password
+       if (!BCrypt.checkpw(currentPassword, user.getPassword())) {
+           if (auditLogService != null) {
+               auditLogService.logEvent(
+                   user,
+                   "PASSWORD_CHANGE_FAILED",
+                   String.format("Failed password change attempt for user: %s", user.getUsername()),
+                   "USER",
+                   user.getId()
+               );
+           }
+           throw new Exception("Current password is incorrect");
+       }
+
+       // Hash and set new password
+       String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+       user.setPassword(hashedPassword);
+       userRepository.save(user);
+
+       // Audit log if available
+       if (auditLogService != null) {
+           auditLogService.logEvent(
+               user,
+               "PASSWORD_CHANGE_SUCCESS",
+               String.format("Password changed successfully for user: %s", user.getUsername()),
                "USER",
                user.getId()
            );
