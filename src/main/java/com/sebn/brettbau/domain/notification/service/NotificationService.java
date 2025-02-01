@@ -6,7 +6,7 @@ import com.sebn.brettbau.domain.notification.mapper.NotificationMapper;
 import com.sebn.brettbau.domain.notification.repository.NotificationRepository;
 import com.sebn.brettbau.domain.user.entity.User;
 import com.sebn.brettbau.domain.user.service.UserService;
-import com.sebn.brettbau.exception.ResourceNotFoundException;  // Add this import
+import com.sebn.brettbau.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

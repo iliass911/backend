@@ -164,55 +164,97 @@ public class InventoryItemService {
         }
     }
 
+    /**
+     * Validates the quantity levels from the provided DTO.
+     * <p>
+     * This method first ensures that all quantity values are non-negative.
+     * Then, it logs warnings if:
+     * <ul>
+     *   <li>The minimum quantity is not less than the maximum quantity.</li>
+     *   <li>The current quantity is below the minimum level.</li>
+     *   <li>The current quantity exceeds the maximum level.</li>
+     * </ul>
+     * </p>
+     *
+     * @param dto the InventoryItemDTO containing quantity details.
+     * @throws IllegalArgumentException if any quantity value is negative.
+     */
     private void validateQuantityLevels(InventoryItemDTO dto) {
-        // Remove blocking validation
-        // Just log a warning if min quantity is not less than max quantity
-        if (dto.getMinQuantity() >= dto.getMaxQuantity()) {
-            logger.warn("Minimum quantity should be less than maximum quantity. Current min: {}, max: {}", 
-                        dto.getMinQuantity(), dto.getMaxQuantity());
-        }
-        
-        // Basic non-negative validation
+        // Only validate that quantities are not negative
         if (dto.getMinQuantity() < 0 || dto.getMaxQuantity() < 0 || dto.getQuantity() < 0) {
             throw new IllegalArgumentException("Quantity values cannot be negative");
         }
+        
+        // Log warnings but don't block the operation
+        if (dto.getMinQuantity() >= dto.getMaxQuantity()) {
+            logger.warn("Warning: Minimum quantity is not less than maximum quantity. Min: {}, Max: {}",
+                        dto.getMinQuantity(), dto.getMaxQuantity());
+        }
+        
+        // Log warnings for quantity outside bounds
+        if (dto.getQuantity() < dto.getMinQuantity()) {
+            logger.warn("Warning: Current quantity is below minimum. Current: {}, Min: {}",
+                        dto.getQuantity(), dto.getMinQuantity());
+        }
+        
+        if (dto.getQuantity() > dto.getMaxQuantity()) {
+            logger.warn("Warning: Current quantity exceeds maximum. Current: {}, Max: {}",
+                        dto.getQuantity(), dto.getMaxQuantity());
+        }
     }
 
+    /**
+     * Checks the stock levels of the given inventory item and creates notifications
+     * for low stock or overstock situations. Each notification call is wrapped in its own
+     * try–catch block so that any failure in creating a notification does not block the operation.
+     *
+     * @param item the inventory item to check.
+     */
     private void checkStockLevels(InventoryItem item) {
         try {
             User admin = userService.getCurrentUser();
             
+            // Create notifications but don't block the save operation
             if (item.isLowStock()) {
-                notificationService.createNotification(
-                    "Low Stock Alert: " + item.getRefCode(),
-                    String.format("Item %s is running low. Current quantity (%d) is at or below minimum level (%d).",
-                        item.getRefCode(), item.getQuantity(), item.getMinQuantity()),
-                    "INVENTORY",
-                    "WARNING",
-                    "HIGH",
-                    admin.getId(),
-                    item.getId(),
-                    "INVENTORY_ITEM"
-                );
+                try {
+                    notificationService.createNotification(
+                        "Low Stock Alert: " + item.getRefCode(),
+                        String.format("Item %s is running low. Current quantity (%d) is at or below minimum level (%d).",
+                            item.getRefCode(), item.getQuantity(), item.getMinQuantity()),
+                        "INVENTORY",
+                        "WARNING",
+                        "HIGH",
+                        admin.getId(),
+                        item.getId(),
+                        "INVENTORY_ITEM"
+                    );
+                } catch (Exception e) {
+                    // Log but do not rethrow the exception
+                    logger.error("Failed to create low stock notification", e);
+                }
             }
             
             if (item.isOverStock()) {
-                notificationService.createNotification(
-                    "Over Stock Alert: " + item.getRefCode(),
-                    String.format("Item %s has exceeded maximum level. Current quantity (%d) is at or above maximum level (%d).",
-                        item.getRefCode(), item.getQuantity(), item.getMaxQuantity()),
-                    "INVENTORY",
-                    "WARNING",
-                    "MEDIUM",
-                    admin.getId(),
-                    item.getId(),
-                    "INVENTORY_ITEM"
-                );
+                try {
+                    notificationService.createNotification(
+                        "Over Stock Alert: " + item.getRefCode(),
+                        String.format("Item %s has exceeded maximum level. Current quantity (%d) is at or above maximum level (%d).",
+                            item.getRefCode(), item.getQuantity(), item.getMaxQuantity()),
+                        "INVENTORY",
+                        "WARNING",
+                        "MEDIUM",
+                        admin.getId(),
+                        item.getId(),
+                        "INVENTORY_ITEM"
+                    );
+                } catch (Exception e) {
+                    // Log but do not rethrow the exception
+                    logger.error("Failed to create over stock notification", e);
+                }
             }
         } catch (Exception e) {
-            // Log the error but don't block the save operation
-            logger.error("Error creating stock level notification", e);
+            // Log any unexpected error during the stock level check
+            logger.error("Error checking stock levels", e);
         }
     }
 }
-

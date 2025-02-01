@@ -23,36 +23,31 @@ public class U6Service {
     }
 
     public U6 save(U6 u6) {
-        // Check for existing identical entry
+        // Check for an existing identical entry (based on core fields)
         List<U6> existingEntries = u6Repository.findAll().stream()
                 .filter(existing -> existing.equals(u6))
                 .collect(Collectors.toList());
-
         if (!existingEntries.isEmpty()) {
             U6 existing = existingEntries.get(0);
-            existing.setOperatorCount(existing.getOperatorCount() + 1);
+            existing.setNbrOperateurs(existing.getNbrOperateurs() != null ? existing.getNbrOperateurs() + 1 : 1);
             return u6Repository.save(existing);
         }
-
-        u6.setOperatorCount(1);
+        if(u6.getNbrOperateurs() == null) {
+            u6.setNbrOperateurs(1);
+        }
         return u6Repository.save(u6);
     }
 
     public List<U6> saveAll(List<U6> u6List) {
-        // Group identical entries and count them
         Map<U6, Integer> groupedEntries = new HashMap<>();
-
         for (U6 entry : u6List) {
             groupedEntries.merge(entry, 1, Integer::sum);
         }
-
-        // Create new list with consolidated entries
         List<U6> consolidatedList = new ArrayList<>();
         groupedEntries.forEach((entry, count) -> {
-            entry.setOperatorCount(count);
+            entry.setNbrOperateurs(count);
             consolidatedList.add(entry);
         });
-
         return u6Repository.saveAll(consolidatedList);
     }
 
@@ -60,4 +55,3 @@ public class U6Service {
         u6Repository.deleteById(id);
     }
 }
-

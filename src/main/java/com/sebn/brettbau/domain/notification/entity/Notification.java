@@ -23,22 +23,22 @@ public class Notification {
     private String message;
 
     @Column(nullable = false)
-    private String module;  // e.g., "INVENTORY", "MAINTENANCE", etc.
+    private String module;
 
     @Column(nullable = false)
-    private String type;    // e.g., "WARNING", "ERROR", "INFO", "SUCCESS"
+    private String type;
 
     @Column(nullable = false)
-    private String severity; // "HIGH", "MEDIUM", "LOW"
+    private String severity;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;      // The user who should see this notification
+    private User user;
 
-    private Long referenceId;  // ID of the related entity (e.g., inventory_item_id)
-    private String referenceType; // Type of the related entity (e.g., "INVENTORY_ITEM")
+    private Long referenceId;
+    private String referenceType;
 
-    @Column(nullable = false)
+    @Column(name = "`read`", nullable = false)
     private boolean read;
 
     @Column(nullable = false)
