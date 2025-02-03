@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS u6;
+DROP TABLE IF EXISTS `u6`;
 
 CREATE TABLE `u6` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -18,11 +18,9 @@ CREATE TABLE `u6` (
     `intervenant` VARCHAR(255) DEFAULT NULL,
     `type_equipement` VARCHAR(255) DEFAULT NULL,
     `nature_intervention` VARCHAR(255) DEFAULT NULL,
-    `lien_scan_fiche_bde` VARCHAR(255) DEFAULT NULL,
+    `lien_scan_fichebde` VARCHAR(255) DEFAULT NULL,
     `installation_date` DATE DEFAULT NULL,
     `equipment_status` VARCHAR(100) DEFAULT NULL,
-    `mtbf` DOUBLE DEFAULT NULL,
-    `mttr` DOUBLE DEFAULT NULL,
     `record_type` VARCHAR(50) DEFAULT 'downtime',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB

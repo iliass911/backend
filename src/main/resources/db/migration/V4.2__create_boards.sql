@@ -7,7 +7,7 @@
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
+/*!40101 SET NAMES utf8 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `boards`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `boards` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `area` varchar(255) DEFAULT NULL,
@@ -67,8 +67,7 @@ CREATE TABLE `boards` (
   CONSTRAINT `FK34h2qw29t0wty3aso01g2y77q` FOREIGN KEY (`family_id`) REFERENCES `board_families` (`id`),
   CONSTRAINT `FKfo4yeju6hvhfds3v71d60g8as` FOREIGN KEY (`pack_id`) REFERENCES `packs` (`id`),
   CONSTRAINT `FKibpfm7pcl75relmu1ax4cnays` FOREIGN KEY (`assigned_user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB;
 
 --
 -- Dumping data for table `boards`

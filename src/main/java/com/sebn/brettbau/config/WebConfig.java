@@ -27,7 +27,6 @@ public class WebConfig implements WebMvcConfigurer {
                 });
     }
 
-    // This is important for forwarding all routes to index.html
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/{path:[^\\.]*}")

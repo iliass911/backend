@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/equipment")
@@ -94,5 +95,24 @@ public class EquipmentController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+    }
+
+    // Bulk creation endpoint
+    @PostMapping("/bulk")
+    public ResponseEntity<List<Equipment>> createBulk(@RequestBody @Validated List<Equipment> equipments) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.KPIS, PermissionType.CREATE)) {
+            throw new AccessDeniedException("No permission to create Equipment");
+        }
+        
+        // Option 1: If you have a saveAll method in your service:
+        // List<Equipment> savedEquipments = equipmentService.saveAll(equipments);
+
+        // Option 2: Otherwise, save each equipment individually
+        List<Equipment> savedEquipments = equipments.stream()
+                .map(equipmentService::save)
+                .collect(Collectors.toList());
+                
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedEquipments);
     }
 }

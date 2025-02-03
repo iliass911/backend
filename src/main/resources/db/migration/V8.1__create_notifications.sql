@@ -15,4 +15,4 @@ CREATE TABLE `notifications` (
   INDEX `idx_user_read` (`user_id`, `read`),
   INDEX `idx_user_created_at` (`user_id`, `created_at`),
   CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB
