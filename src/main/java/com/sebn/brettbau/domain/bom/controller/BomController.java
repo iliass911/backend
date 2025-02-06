@@ -22,7 +22,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/boms")
 @CrossOrigin(
-    origins = "http://localhost:3000",
+    origins = "http://10.150.2.201:3000",
     allowedHeaders = {
         "Origin", 
         "Content-Type", 

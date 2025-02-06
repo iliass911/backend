@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/u6")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://10.150.2.201:3000")
 @Validated
 public class U6Controller {
 

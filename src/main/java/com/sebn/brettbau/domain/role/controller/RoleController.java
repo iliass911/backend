@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/roles")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://10.150.2.201:3000")
 public class RoleController {
 
     private final RoleService roleService;
@@ -48,11 +48,6 @@ public class RoleController {
     /**
      * Assigns a permission to a role.
      * Requires UPDATE permission on the ROLE module.
-     *
-     * @param roleId         the ID of the role
-     * @param module         the module to assign the permission to
-     * @param permissionType the type of permission
-     * @return ResponseEntity with a success message
      */
     @PostMapping("/{roleId}/permissions")
     public ResponseEntity<String> assignPermission(
@@ -71,11 +66,6 @@ public class RoleController {
     /**
      * Removes a permission from a role.
      * Requires DELETE permission on the ROLE module.
-     *
-     * @param roleId         the ID of the role
-     * @param module         the module to remove the permission from
-     * @param permissionType the type of permission
-     * @return ResponseEntity with a success message
      */
     @DeleteMapping("/{roleId}/permissions")
     public ResponseEntity<String> removePermission(
@@ -94,8 +84,6 @@ public class RoleController {
     /**
      * Retrieves all roles.
      * Requires READ permission on the ROLE module.
-     *
-     * @return ResponseEntity containing all roles
      */
     @GetMapping
     public ResponseEntity<Iterable<Role>> getAllRoles() {
@@ -110,9 +98,6 @@ public class RoleController {
     /**
      * Retrieves a role by its ID.
      * Requires READ permission on the ROLE module.
-     *
-     * @param roleId the ID of the role
-     * @return ResponseEntity containing the role
      */
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
@@ -124,6 +109,16 @@ public class RoleController {
         return ResponseEntity.ok(role);
     }
 
-    // Additional endpoints can be added here as needed, ensuring appropriate permission checks.
+    // ------------------------------------------------------------------
+    // NEW ENDPOINT: DELETE a role by ID (Requires DELETE permission)
+    // ------------------------------------------------------------------
+    @DeleteMapping("/{roleId}")
+    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.ROLE, PermissionType.DELETE)) {
+            throw new AccessDeniedException("No permission to DELETE roles.");
+        }
+        roleService.deleteRole(roleId);
+        return ResponseEntity.ok().build();
+    }
 }
-

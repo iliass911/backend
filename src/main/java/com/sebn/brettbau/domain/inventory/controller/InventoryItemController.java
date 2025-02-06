@@ -1,5 +1,4 @@
 // src/main/java/com/sebn/brettbau/domain/inventory/controller/InventoryItemController.java
-
 package com.sebn.brettbau.domain.inventory.controller;
 
 import com.sebn.brettbau.domain.inventory.dto.InventoryItemDTO;
@@ -14,12 +13,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/inventory")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://10.150.2.201:3000")
 @Validated
 public class InventoryItemController {
 
@@ -48,6 +48,19 @@ public class InventoryItemController {
         }
         InventoryItemDTO createdItem = service.createItem(dto);
         return ResponseEntity.ok(createdItem);
+    }
+
+    /**
+     * Bulk upload inventory items from a CSV or Excel file.
+     */
+    @PostMapping("/bulk")
+    public ResponseEntity<List<InventoryItemDTO>> bulkUpload(@RequestParam("file") MultipartFile file) {
+        User currentUser = userService.getCurrentUser();
+        if (!roleService.roleHasPermission(currentUser.getRole(), Module.INVENTORY, PermissionType.CREATE)) {
+            throw new AccessDeniedException("No permission to create inventory items");
+        }
+        List<InventoryItemDTO> createdItems = service.bulkUploadItems(file);
+        return ResponseEntity.ok(createdItems);
     }
 
     /**
@@ -104,4 +117,3 @@ public class InventoryItemController {
         return ResponseEntity.noContent().build();
     }
 }
-

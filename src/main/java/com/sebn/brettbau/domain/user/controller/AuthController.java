@@ -20,7 +20,7 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", allowedHeaders = "*")
+@CrossOrigin(origins = "http://10.150.2.201:3000", allowCredentials = "true", allowedHeaders = "*")
 public class AuthController {
 
     @Autowired

@@ -17,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/maintenance")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://10.150.2.201:3000")
 @Validated
 public class MaintenanceInterventionController {
     private final MaintenanceInterventionService service;

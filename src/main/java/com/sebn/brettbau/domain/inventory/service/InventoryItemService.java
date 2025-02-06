@@ -1,3 +1,4 @@
+// src/main/java/com/sebn/brettbau/domain/inventory/service/InventoryItemService.java
 package com.sebn.brettbau.domain.inventory.service;
 
 import com.sebn.brettbau.domain.audit.service.AuditLogService;
@@ -10,11 +11,17 @@ import com.sebn.brettbau.domain.user.entity.User;
 import com.sebn.brettbau.domain.user.service.UserService;
 import com.sebn.brettbau.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +41,7 @@ public class InventoryItemService {
             validateQuantityLevels(dto);
             InventoryItem entity = InventoryItemMapper.toEntity(dto);
             InventoryItem saved = repository.save(entity);
-            
+
             checkStockLevels(saved);
 
             User currentUser = userService.getCurrentUser();
@@ -52,6 +59,38 @@ public class InventoryItemService {
             logger.error("Error creating inventory item", e);
             throw new RuntimeException("Failed to create inventory item: " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public List<InventoryItemDTO> bulkUploadItems(MultipartFile file) {
+        List<InventoryItemDTO> createdItems = new ArrayList<>();
+        try (Reader reader = new InputStreamReader(file.getInputStream())) {
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withHeader("refCode", "site", "type", "quantity", "minQuantity", "maxQuantity", "place", "unit", "price", "sezamNumber")
+                    .withSkipHeaderRecord(true)
+                    .parse(reader);
+
+            for (CSVRecord record : records) {
+                InventoryItemDTO dto = new InventoryItemDTO();
+                dto.setRefCode(record.get("refCode"));
+                dto.setSite(record.get("site"));
+                dto.setType(record.get("type"));
+                dto.setQuantity(Integer.parseInt(record.get("quantity")));
+                dto.setMinQuantity(Integer.parseInt(record.get("minQuantity")));
+                dto.setMaxQuantity(Integer.parseInt(record.get("maxQuantity")));
+                dto.setPlace(record.get("place"));
+                dto.setUnit(record.get("unit"));
+                dto.setPrice(Double.parseDouble(record.get("price")));
+                dto.setSezamNumber(record.get("sezamNumber"));
+                // Create each inventory item using the existing createItem method
+                InventoryItemDTO created = createItem(dto);
+                createdItems.add(created);
+            }
+        } catch (Exception e) {
+            logger.error("Error processing bulk upload", e);
+            throw new RuntimeException("Failed to process bulk upload: " + e.getMessage());
+        }
+        return createdItems;
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +111,7 @@ public class InventoryItemService {
     public InventoryItemDTO updateItem(Long id, InventoryItemDTO dto) {
         try {
             validateQuantityLevels(dto);
-            
+
             InventoryItem entity = repository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found with id: " + id));
 
@@ -92,7 +131,7 @@ public class InventoryItemService {
             entity.setSezamNumber(dto.getSezamNumber());
 
             InventoryItem updated = repository.save(entity);
-            
+
             checkStockLevels(updated);
 
             User currentUser = userService.getCurrentUser();
@@ -135,86 +174,28 @@ public class InventoryItemService {
         }
     }
 
-    @Transactional
-    public InventoryItemDTO updateQuantityOnly(Long id, Integer quantity) {
-        try {
-            InventoryItem entity = repository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found with id: " + id));
-
-            String oldDetails = String.format("Quantity: %d", entity.getQuantity());
-            entity.setQuantity(quantity);
-            InventoryItem updated = repository.save(entity);
-            
-            checkStockLevels(updated);
-
-            User currentUser = userService.getCurrentUser();
-            auditLogService.logEvent(
-                currentUser,
-                "INVENTORY_QUANTITY_UPDATED",
-                String.format("Inventory quantity updated from [%s] to [Quantity: %d]",
-                    oldDetails, updated.getQuantity()),
-                "INVENTORY",
-                updated.getId()
-            );
-
-            return InventoryItemMapper.toDTO(updated);
-        } catch (Exception e) {
-            logger.error("Error updating inventory item quantity", e);
-            throw new RuntimeException("Failed to update inventory item quantity: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Validates the quantity levels from the provided DTO.
-     * <p>
-     * This method first ensures that all quantity values are non-negative.
-     * Then, it logs warnings if:
-     * <ul>
-     *   <li>The minimum quantity is not less than the maximum quantity.</li>
-     *   <li>The current quantity is below the minimum level.</li>
-     *   <li>The current quantity exceeds the maximum level.</li>
-     * </ul>
-     * </p>
-     *
-     * @param dto the InventoryItemDTO containing quantity details.
-     * @throws IllegalArgumentException if any quantity value is negative.
-     */
+    // --- Validation and Notification methods (unchanged) ---
     private void validateQuantityLevels(InventoryItemDTO dto) {
-        // Only validate that quantities are not negative
         if (dto.getMinQuantity() < 0 || dto.getMaxQuantity() < 0 || dto.getQuantity() < 0) {
             throw new IllegalArgumentException("Quantity values cannot be negative");
         }
-        
-        // Log warnings but don't block the operation
         if (dto.getMinQuantity() >= dto.getMaxQuantity()) {
             logger.warn("Warning: Minimum quantity is not less than maximum quantity. Min: {}, Max: {}",
                         dto.getMinQuantity(), dto.getMaxQuantity());
         }
-        
-        // Log warnings for quantity outside bounds
         if (dto.getQuantity() < dto.getMinQuantity()) {
             logger.warn("Warning: Current quantity is below minimum. Current: {}, Min: {}",
                         dto.getQuantity(), dto.getMinQuantity());
         }
-        
         if (dto.getQuantity() > dto.getMaxQuantity()) {
             logger.warn("Warning: Current quantity exceeds maximum. Current: {}, Max: {}",
                         dto.getQuantity(), dto.getMaxQuantity());
         }
     }
 
-    /**
-     * Checks the stock levels of the given inventory item and creates notifications
-     * for low stock or overstock situations. Each notification call is wrapped in its own
-     * try–catch block so that any failure in creating a notification does not block the operation.
-     *
-     * @param item the inventory item to check.
-     */
     private void checkStockLevels(InventoryItem item) {
         try {
             User admin = userService.getCurrentUser();
-            
-            // Create notifications but don't block the save operation
             if (item.isLowStock()) {
                 try {
                     notificationService.createNotification(
@@ -229,11 +210,9 @@ public class InventoryItemService {
                         "INVENTORY_ITEM"
                     );
                 } catch (Exception e) {
-                    // Log but do not rethrow the exception
                     logger.error("Failed to create low stock notification", e);
                 }
             }
-            
             if (item.isOverStock()) {
                 try {
                     notificationService.createNotification(
@@ -248,12 +227,10 @@ public class InventoryItemService {
                         "INVENTORY_ITEM"
                     );
                 } catch (Exception e) {
-                    // Log but do not rethrow the exception
                     logger.error("Failed to create over stock notification", e);
                 }
             }
         } catch (Exception e) {
-            // Log any unexpected error during the stock level check
             logger.error("Error checking stock levels", e);
         }
     }

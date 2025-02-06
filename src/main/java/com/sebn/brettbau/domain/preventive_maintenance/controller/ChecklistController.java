@@ -23,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/checklists")
 @CrossOrigin(
-    origins = "http://localhost:3000",
+    origins = "http://10.150.2.201:3000",
     allowedHeaders = {
         "Origin", 
         "Content-Type", 

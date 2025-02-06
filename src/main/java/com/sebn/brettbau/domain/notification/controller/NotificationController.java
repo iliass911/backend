@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http:/10.150.2.201:3000")
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;

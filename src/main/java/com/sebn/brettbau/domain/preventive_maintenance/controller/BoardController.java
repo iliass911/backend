@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/boards")
-@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = {
+@CrossOrigin(origins = "http://10.150.2.201:3000", allowedHeaders = {
     "Origin", "Content-Type", "Accept", "Authorization", "X-Requesting-Module"
 })
 public class BoardController {
