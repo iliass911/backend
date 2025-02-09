@@ -4,7 +4,6 @@ import com.sebn.brettbau.domain.customtable.dto.*;
 import com.sebn.brettbau.domain.customtable.entity.*;
 import com.sebn.brettbau.domain.customtable.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ public class CustomTableService {
     private final CustomColumnRepository columnRepository;
     private final CustomTableDataRepository dataRepository;
     private final CustomTableSessionRepository sessionRepository;
-    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Creates a new CustomTable along with any provided columns.
@@ -235,11 +233,6 @@ public class CustomTableService {
                     data.setRowIndex(data.getRowIndex() + 1);
                     dataRepository.save(data);
                 });
-
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/updates",
-                update
-        );
     }
 
     /**
@@ -257,23 +250,6 @@ public class CustomTableService {
             data.setRowIndex(data.getRowIndex() - 1);
             dataRepository.save(data);
         });
-
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/updates",
-                update
-        );
-    }
-
-    /**
-     * Update column properties.
-     */
-    @Transactional
-    public void updateColumn(Long tableId, TableUpdateMessage update) {
-        // Placeholder for column update logic.
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/updates",
-                update
-        );
     }
 
     /**
@@ -304,11 +280,6 @@ public class CustomTableService {
         data.setLastModifiedBy(update.getUpdatedBy());
 
         dataRepository.save(data);
-
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/updates",
-                update
-        );
     }
 
     /**
@@ -328,11 +299,15 @@ public class CustomTableService {
                 .build();
 
         sessionRepository.save(session);
-
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/users",
-                getActiveUsers(tableId)
-        );
+    }
+    
+    /**
+     * Update column properties.
+     */
+    @Transactional
+    public void updateColumn(Long tableId, TableUpdateMessage update) {
+        // Implement any necessary column update logic here
+        // For now it's empty since the WebSocket notification was removed
     }
 
     /**
@@ -341,11 +316,6 @@ public class CustomTableService {
     @Transactional
     public void leaveSession(Long tableId, String userId) {
         sessionRepository.deleteByUserIdAndTableId(userId, tableId);
-
-        messagingTemplate.convertAndSend(
-                "/topic/table/" + tableId + "/users",
-                getActiveUsers(tableId)
-        );
     }
 
     /**

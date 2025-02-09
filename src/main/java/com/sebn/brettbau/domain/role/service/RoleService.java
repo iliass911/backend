@@ -36,6 +36,8 @@ public class RoleService {
         INDIRECT_ACCESS_MAP.put(Module.FB_FAMILY, new HashSet<>(Set.of(Module.BOARD, Module.SITE, Module.PROJECT, Module.INVENTORY, Module.BOM)));
         INDIRECT_ACCESS_MAP.put(Module.BOARD, new HashSet<>(Set.of(Module.PACK, Module.SITE, Module.PROJECT, Module.BOM)));
         INDIRECT_ACCESS_MAP.put(Module.ACTION_MANAGEMENT, new HashSet<>(Set.of(Module.SITE,Module.USER, Module.PROJECT, Module.PACK, Module.BOARD, Module.PHASE, Module.MAINTENANCE_SCHEDULE)));
+        INDIRECT_ACCESS_MAP.put(Module.CHAT, new HashSet<>(Set.of(Module.SITE,Module.USER, Module.PROJECT, Module.PACK, Module.BOARD, Module.PHASE, Module.MAINTENANCE_SCHEDULE)));
+        
     }
 
     public RoleService(RoleRepository roleRepository, RolePermissionRepository rolePermissionRepository) {

@@ -20,7 +20,10 @@ public enum Module {
     FB_FAMILY,//
     KPIS,
     DASHBOARD,
-	PHASE
+	PHASE,
+	Custom,
+	ANNOUNCEMENT,
+	CHAT
     
 }
 

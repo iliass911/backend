@@ -25,6 +25,9 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final AuditLogService auditLogService; // If you have an audit log service
 
+    // Assuming a logger is available (e.g., using SLF4J)
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserService.class);
+
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -34,6 +37,10 @@ public class UserService {
         String username = authentication.getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
     public User registerUser(RegisterRequest registerRequest) throws Exception {
@@ -98,8 +105,19 @@ public class UserService {
         return user;
     }
 
+    // --------------------------
+    // UPDATED: Enhanced Logging for Get All Users
+    // --------------------------
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        try {
+            logger.info("Attempting to fetch all users");
+            List<User> users = userRepository.findAll();
+            logger.info("Successfully fetched {} users", users.size());
+            return users;
+        } catch (Exception e) {
+            logger.error("Error fetching users", e);
+            throw new RuntimeException("Unable to fetch users", e);
+        }
     }
 
     public User getUserById(Long id) {
@@ -131,7 +149,6 @@ public class UserService {
     // --------------------------
     // NEW: Update and Delete
     // --------------------------
-
     public User updateUser(Long id, User updatedUser) {
         User user = getUserById(id);
 
