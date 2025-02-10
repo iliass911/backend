@@ -1,4 +1,3 @@
-// BoardRepository.java
 package com.sebn.brettbau.domain.preventive_maintenance.repository;
 
 import com.sebn.brettbau.domain.preventive_maintenance.entity.Board;
@@ -19,6 +18,4 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     
     @Query("SELECT DISTINCT b.fbType1 FROM Board b WHERE b.fbType1 IS NOT NULL")
     List<String> findDistinctFbType1();
-    
-    List<Board> findByFamilyId(Long familyId);
 }

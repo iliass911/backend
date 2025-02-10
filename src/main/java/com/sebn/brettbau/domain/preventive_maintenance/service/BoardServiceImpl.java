@@ -33,8 +33,7 @@ public class BoardServiceImpl implements BoardService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private BoardFamilyService familyService;
+ 
 
     @Override
     public List<BoardDTO> getAllBoards() {

@@ -4,13 +4,8 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import lombok.*;
 import com.sebn.brettbau.domain.user.entity.User;
-import com.sebn.brettbau.domain.bom.entity.Bom;
-import com.sebn.brettbau.domain.preventive_maintenance.entity.Checklist;
 import java.time.LocalDate;
 import java.util.Set;
-
-// Import BoardFamily if it's in a different package. Adjust the package as necessary.
-// import com.sebn.brettbau.domain.preventive_maintenance.entity.BoardFamily;
 
 @Entity
 @Table(name = "boards")
@@ -134,9 +129,8 @@ public class Board {
     @Column(name = "storage_place")
     private String storagePlace;
 
-    // Newly added status field with default value
     @Column(name = "status")
-    private String status = "PENDING"; // PENDING, OK, or DANGER
+    private String status = "PENDING";
 
     // -------------------------------------------------
     // 4) Relationships
@@ -144,7 +138,6 @@ public class Board {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_user_id")
     private User assignedUser;
-    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pack_id")
@@ -153,14 +146,5 @@ public class Board {
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Checklist> checklists;
 
-    @OneToOne(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Bom bom;
-
-    // -------------------------------------------------
-    // 5) Family Relationship
-    // -------------------------------------------------
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "family_id")
-    private BoardFamily family;
+    // Note: Removed Bom and BoardFamily relationships
 }
-
