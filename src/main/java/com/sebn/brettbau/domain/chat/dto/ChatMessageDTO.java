@@ -1,4 +1,3 @@
-// src/main/java/com/sebn/brettbau/domain/chat/dto/ChatMessageDTO.java
 package com.sebn.brettbau.domain.chat.dto;
 
 import lombok.Data;
@@ -15,4 +14,8 @@ public class ChatMessageDTO {
     private LocalDateTime updatedAt;
     private boolean isEveryoneMention;
     private Set<String> mentionedUsernames;
+    private boolean hasAttachment;
+    private String attachmentUrl;
+    private String attachmentType;
+    private String attachmentName;
 }

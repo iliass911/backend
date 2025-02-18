@@ -1,9 +1,19 @@
 package com.sebn.brettbau.domain.customtable.service;
 
-import com.sebn.brettbau.domain.customtable.dto.*;
-import com.sebn.brettbau.domain.customtable.entity.*;
-import com.sebn.brettbau.domain.customtable.repository.*;
+import com.sebn.brettbau.domain.customtable.dto.CustomColumnDTO;
+import com.sebn.brettbau.domain.customtable.dto.CustomTableDTO;
+import com.sebn.brettbau.domain.customtable.dto.TableUpdateMessage;
+import com.sebn.brettbau.domain.customtable.entity.CustomColumn;
+import com.sebn.brettbau.domain.customtable.entity.CustomTable;
+import com.sebn.brettbau.domain.customtable.entity.CustomTableData;
+import com.sebn.brettbau.domain.customtable.entity.CustomTableSession;
+import com.sebn.brettbau.domain.customtable.repository.CustomColumnRepository;
+import com.sebn.brettbau.domain.customtable.repository.CustomTableDataRepository;
+import com.sebn.brettbau.domain.customtable.repository.CustomTableRepository;
+import com.sebn.brettbau.domain.customtable.repository.CustomTableSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,53 +27,94 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomTableService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CustomTableService.class);
+
     private final CustomTableRepository tableRepository;
     private final CustomColumnRepository columnRepository;
     private final CustomTableDataRepository dataRepository;
     private final CustomTableSessionRepository sessionRepository;
 
     /**
-     * Creates a new CustomTable along with any provided columns.
+     * Creates a new CustomTable along with any provided columns and initial data.
      */
     @Transactional
     public CustomTableDTO createTable(CustomTableDTO dto, String userId) {
-        CustomTable table = CustomTable.builder()
-                .name(dto.getName())
-                .description(dto.getDescription())
-                .createdBy(userId)
-                .createdAt(LocalDateTime.now())
-                .lastModifiedBy(userId)
-                .lastModifiedAt(LocalDateTime.now())
-                .build();
-
-        CustomTable savedTable = tableRepository.save(table);
-
-        if (dto.getColumns() != null) {
-            for (CustomColumnDTO colDto : dto.getColumns()) {
-                CustomColumn column = CustomColumn.builder()
-                        .table(savedTable)
-                        .name(colDto.getName())
-                        .type(colDto.getType())
-                        .orderIndex(colDto.getOrderIndex())
-                        .required(colDto.getRequired())
-                        .defaultValue(colDto.getDefaultValue())
-                        .precision(colDto.getPrecision())
-                        .scale(colDto.getScale())
-                        .maxLength(colDto.getMaxLength())
-                        .dateFormat(colDto.getDateFormat())
-                        .build();
-                columnRepository.save(column);
+        try {
+            // Validate input
+            if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+                throw new IllegalArgumentException("Table name cannot be empty");
             }
-        }
 
-        return mapToDTO(savedTable);
+            CustomTable table = CustomTable.builder()
+                    .name(dto.getName())
+                    .description(dto.getDescription())
+                    .createdBy(userId)
+                    .createdAt(LocalDateTime.now())
+                    .lastModifiedBy(userId)
+                    .lastModifiedAt(LocalDateTime.now())
+                    .build();
+
+            CustomTable savedTable = tableRepository.save(table);
+
+            // Save columns and keep a list of the saved entities
+            List<CustomColumn> savedColumns = new ArrayList<>();
+            if (dto.getColumns() != null) {
+                for (int i = 0; i < dto.getColumns().size(); i++) {
+                    CustomColumnDTO colDto = dto.getColumns().get(i);
+                    CustomColumn column = CustomColumn.builder()
+                            .table(savedTable)
+                            .name(colDto.getName())
+                            .type(colDto.getType())
+                            // Use the loop index as the order index if not provided
+                            .orderIndex(colDto.getOrderIndex() != null ? colDto.getOrderIndex() : i)
+                            .required(colDto.getRequired() != null ? colDto.getRequired() : false)
+                            .defaultValue(colDto.getDefaultValue())
+                            .precision(colDto.getPrecision())
+                            .scale(colDto.getScale())
+                            .maxLength(colDto.getMaxLength())
+                            .dateFormat(colDto.getDateFormat())
+                            .build();
+                    savedColumns.add(columnRepository.save(column));
+                }
+            }
+
+            // Initialize table data if provided
+            if (dto.getData() != null && !dto.getData().isEmpty()) {
+                for (int rowIndex = 0; rowIndex < dto.getData().size(); rowIndex++) {
+                    List<Object> row = dto.getData().get(rowIndex);
+                    for (int colIndex = 0; colIndex < row.size(); colIndex++) {
+                        // Ensure that a corresponding column exists
+                        if (colIndex >= savedColumns.size()) {
+                            throw new IllegalArgumentException("Data column index " + colIndex +
+                                    " exceeds the number of table columns " + savedColumns.size());
+                        }
+                        CustomTableData cellData = CustomTableData.builder()
+                                .table(savedTable)
+                                .column(savedColumns.get(colIndex))
+                                .rowIndex(rowIndex)
+                                .cellValue(String.valueOf(row.get(colIndex)))
+                                .lastModifiedAt(LocalDateTime.now())
+                                .lastModifiedBy(userId)
+                                .build();
+                        dataRepository.save(cellData);
+                    }
+                }
+            }
+
+            return mapToDTO(savedTable);
+        } catch (Exception e) {
+            logger.error("Error creating table for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Error creating table: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * Get all tables created by a specific user.
+     * Get all tables in the system.
+     *
+     * Note: Although the method signature accepts a userId, it now returns all tables.
      */
     public List<CustomTableDTO> getTablesByUser(String userId) {
-        return tableRepository.findByCreatedBy(userId)
+        return tableRepository.findAll()
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -80,19 +131,14 @@ public class CustomTableService {
 
     /**
      * Update an existing table.
-     *
-     * This implementation updates the table's basic properties (name and description),
-     * updates the columns (if provided) by deleting existing ones and recreating them,
-     * and finally updates the cell data if provided.
      */
     @Transactional
     public CustomTableDTO updateTable(Long tableId, CustomTableDTO tableDTO) {
         try {
-            // Log incoming data for debugging
-            System.out.println("Updating table: " + tableId);
-            System.out.println("Table Name: " + tableDTO.getName());
-            System.out.println("Columns received: " + (tableDTO.getColumns() != null ? tableDTO.getColumns().size() : "None"));
-            System.out.println("Data received: " + (tableDTO.getData() != null ? tableDTO.getData().size() : "None"));
+            logger.info("Updating table: {}", tableId);
+            logger.info("Table Name: {}", tableDTO.getName());
+            logger.info("Columns received: {}", (tableDTO.getColumns() != null ? tableDTO.getColumns().size() : "None"));
+            logger.info("Data received: {}", (tableDTO.getData() != null ? tableDTO.getData().size() : "None"));
 
             // Fetch the table
             CustomTable table = tableRepository.findById(tableId)
@@ -142,13 +188,11 @@ public class CustomTableService {
                 for (int rowIndex = 0; rowIndex < tableDTO.getData().size(); rowIndex++) {
                     List<Object> rowData = tableDTO.getData().get(rowIndex);
                     for (int colIndex = 0; colIndex < rowData.size(); colIndex++) {
-                        // Ensure we have a corresponding column for this cell.
                         if (colIndex >= columns.size()) {
                             throw new IllegalArgumentException("Data column index " + colIndex +
                                     " exceeds the number of table columns " + columns.size());
                         }
                         CustomColumn column = columns.get(colIndex);
-
                         CustomTableData cellData = CustomTableData.builder()
                                 .table(updatedTable)
                                 .column(column)
@@ -157,7 +201,6 @@ public class CustomTableService {
                                 .lastModifiedAt(LocalDateTime.now())
                                 .lastModifiedBy(tableDTO.getLastModifiedBy())
                                 .build();
-
                         dataRepository.save(cellData);
                     }
                 }
@@ -165,8 +208,7 @@ public class CustomTableService {
 
             return mapToDTO(updatedTable);
         } catch (Exception e) {
-            // Log the full stack trace for debugging purposes
-            e.printStackTrace();
+            logger.error("Error updating table {}: {}", tableId, e.getMessage(), e);
             throw new RuntimeException("Error updating table: " + e.getMessage(), e);
         }
     }
@@ -306,8 +348,7 @@ public class CustomTableService {
      */
     @Transactional
     public void updateColumn(Long tableId, TableUpdateMessage update) {
-        // Implement any necessary column update logic here
-        // For now it's empty since the WebSocket notification was removed
+        // Implement any necessary column update logic here.
     }
 
     /**

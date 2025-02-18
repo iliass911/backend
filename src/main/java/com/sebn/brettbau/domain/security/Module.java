@@ -1,4 +1,3 @@
-// src/main/java/com/example/backend/domain/security/Module.java
 package com.sebn.brettbau.domain.security;
 
 public enum Module {
@@ -7,11 +6,11 @@ public enum Module {
     AUDIT_LOGS,
     BOARD,
     BOM,
-    BOARD_FAMILY,  // Add this line
+    FB_FAMILY,
     CHANGE_PROTOCOL,
     CHAT,
     DASHBOARD,
-    FB_FAMILY,
+    TOOL_MANAGEMENT,
     INVENTORY,
     KPIS,
     MAINTENANCE,

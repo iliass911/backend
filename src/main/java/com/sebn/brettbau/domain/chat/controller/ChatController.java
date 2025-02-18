@@ -1,4 +1,3 @@
-// src/main/java/com/sebn/brettbau/domain/chat/controller/ChatController.java
 package com.sebn.brettbau.domain.chat.controller;
 
 import com.sebn.brettbau.domain.chat.dto.ChatMessageDTO;
@@ -19,10 +18,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin(origins = "http://10.150.2.201:3000")
+@CrossOrigin(origins = "http://localhost:3000")
 @Validated
 @RequiredArgsConstructor
 public class ChatController {
+    
     private final ChatService chatService;
     private final RoleService roleService;
     private final UserService userService;

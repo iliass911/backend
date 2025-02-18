@@ -1,7 +1,8 @@
-// src/main/java/com/sebn/brettbau/domain/chat/dto/ChatMessageRequest.java
 package com.sebn.brettbau.domain.chat.dto;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.validation.constraints.NotBlank;
 import java.util.Set;
 
@@ -11,4 +12,5 @@ public class ChatMessageRequest {
     private String content;
     private Set<String> mentionedUsernames;
     private boolean isEveryoneMention;
+    private MultipartFile attachment;
 }

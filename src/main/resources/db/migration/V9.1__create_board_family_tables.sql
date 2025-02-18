@@ -57,20 +57,26 @@ CREATE TABLE `bom_items` (
 -- -----------------------------------------------------
 -- Add module to role_permissions enum
 -- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Add module to role_permissions enum
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Add module to role_permissions enum
+-- -----------------------------------------------------
 ALTER TABLE role_permissions 
 MODIFY COLUMN module ENUM(
     'ACTION_MANAGEMENT','ANNOUNCEMENT','AUDIT_LOGS','BOARD','BOM',
     'CHANGE_PROTOCOL','CHAT','DASHBOARD','FB_FAMILY','INVENTORY',
     'KPIS','MAINTENANCE','MAINTENANCE_SCHEDULE','PACK','PHASE',
     'PROJECT','ROLE','SITE','USER','USERS_PREVENTIVE','WEEKLY_REPORT',
-    'Custom', 'BOARD_FAMILY'
+    'Custom'
 ) NOT NULL;
 
 -- -----------------------------------------------------
 -- Grant permissions to admin role
 -- -----------------------------------------------------
 INSERT INTO role_permissions (role_id, module, permission_type)
-SELECT id, 'BOARD_FAMILY', permission_type
+SELECT id, 'FB_FAMILY', permission_type
 FROM roles
 CROSS JOIN (
     SELECT 'CREATE' AS permission_type UNION

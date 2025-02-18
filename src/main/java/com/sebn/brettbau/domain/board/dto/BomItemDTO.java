@@ -27,6 +27,8 @@ public class BomItemDTO {
     
     private String observation;
     private Double price;
+    
+    private Long boardFamilyId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

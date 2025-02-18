@@ -5,6 +5,9 @@ import com.sebn.brettbau.domain.customtable.dto.CustomTableDTO;
 import com.sebn.brettbau.domain.customtable.dto.TableUpdateMessage;
 import com.sebn.brettbau.domain.customtable.service.CustomTableService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -12,27 +15,41 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/custom-tables")
 @RequiredArgsConstructor
 public class CustomTableController {
 
+    private static final Logger logger = LoggerFactory.getLogger(CustomTableController.class);
     private final CustomTableService tableService;
 
     /**
      * Create a new custom table.
      */
     @PostMapping
-    public ResponseEntity<CustomTableDTO> createTable(
+    public ResponseEntity<?> createTable(
             @RequestBody CustomTableDTO tableDTO,
             Authentication authentication) {
-        CustomTableDTO created = tableService.createTable(tableDTO, authentication.getName());
-        return ResponseEntity.ok(created);
+        try {
+            CustomTableDTO created = tableService.createTable(tableDTO, authentication.getName());
+            return ResponseEntity.ok(created);
+        } catch (IllegalArgumentException e) {
+            // Return 400 Bad Request for validation errors.
+            logger.warn("Validation error while creating table: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error in createTable endpoint: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error creating table: " + e.getMessage()));
+        }
     }
 
     /**
      * Get all tables for the authenticated user.
+     *
+     * Note: This endpoint now returns all tables in the system, regardless of creator.
      */
     @GetMapping
     public ResponseEntity<List<CustomTableDTO>> getTables(Authentication authentication) {

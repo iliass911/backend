@@ -14,46 +14,39 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BoardFamilyController {
     private final BoardFamilyService service;
-    
+
     @GetMapping
     public ResponseEntity<List<BoardFamilyDTO>> getAllBoardFamilies() {
         return ResponseEntity.ok(service.getAllBoardFamilies());
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<BoardFamilyDTO> getBoardFamilyById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getBoardFamilyById(id));
     }
-    
+
     @PostMapping
     public ResponseEntity<BoardFamilyDTO> createBoardFamily(@Valid @RequestBody BoardFamilyDTO dto) {
         return ResponseEntity.ok(service.createBoardFamily(dto));
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<BoardFamilyDTO> updateBoardFamily(
             @PathVariable Long id,
             @Valid @RequestBody BoardFamilyDTO dto) {
         return ResponseEntity.ok(service.updateBoardFamily(id, dto));
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBoardFamily(@PathVariable Long id) {
         service.deleteBoardFamily(id);
         return ResponseEntity.noContent().build();
     }
-    
+
     @PostMapping("/{id}/duplicate")
     public ResponseEntity<BoardFamilyDTO> duplicateBoardFamily(
             @PathVariable Long id,
             @RequestParam String newPhase) {
         return ResponseEntity.ok(service.duplicateBoardFamily(id, newPhase));
-    }
-    
-    @GetMapping("/compare")
-    public ResponseEntity<BoardFamilyComparisonDTO> compareBoardFamilies(
-            @RequestParam Long family1Id,
-            @RequestParam Long family2Id) {
-        return ResponseEntity.ok(service.compareBoardFamilies(family1Id, family2Id));
     }
 }

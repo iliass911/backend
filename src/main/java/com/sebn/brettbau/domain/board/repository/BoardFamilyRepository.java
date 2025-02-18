@@ -16,4 +16,8 @@ public interface BoardFamilyRepository extends JpaRepository<BoardFamily, Long> 
     
     @Query("SELECT DISTINCT b.phase FROM BoardFamily b WHERE b.project = ?1")
     List<String> findPhasesByProject(String project);
+    
+    // New method to load a board family with its BOM items
+    @Query("SELECT b FROM BoardFamily b LEFT JOIN FETCH b.bomItems WHERE b.id = ?1")
+    BoardFamily findByIdWithBomItems(Long id);
 }
