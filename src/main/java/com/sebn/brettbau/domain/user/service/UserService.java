@@ -49,6 +49,10 @@ public class UserService {
             throw new Exception("Username already exists.");
         }
 
+        if (userRepository.existsByMatricule(registerRequest.getMatricule())) {
+            throw new Exception("Matricule already exists.");
+        }
+
         String hashedPassword = BCrypt.hashpw(registerRequest.getPassword(), BCrypt.gensalt());
         Role defaultRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new Exception("Role [USER] not found in DB"));
@@ -58,6 +62,14 @@ public class UserService {
                 .password(hashedPassword)
                 .matricule(registerRequest.getMatricule())
                 .role(defaultRole)
+                // Added new employee info fields
+                .fullName(registerRequest.getFullName())
+                .site(registerRequest.getSite())
+                .project(registerRequest.getProject())
+                .jobFunction(registerRequest.getJobFunction())  // Changed from function()
+                .assignmentDate(registerRequest.getAssignmentDate())
+                .seniority(registerRequest.getSeniority())
+                .status(registerRequest.getStatus())
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -105,9 +117,6 @@ public class UserService {
         return user;
     }
 
-    // --------------------------
-    // UPDATED: Enhanced Logging for Get All Users
-    // --------------------------
     public List<User> getAllUsers() {
         try {
             logger.info("Attempting to fetch all users");
@@ -146,16 +155,22 @@ public class UserService {
         }
     }
 
-    // --------------------------
-    // NEW: Update and Delete
-    // --------------------------
+    // Updated updateUser method to include new employee fields
     public User updateUser(Long id, User updatedUser) {
         User user = getUserById(id);
 
-        // Update fields as needed. For example:
+        // Update fields as needed
         user.setUsername(updatedUser.getUsername());
         user.setMatricule(updatedUser.getMatricule());
-        // If there are other fields you want to allow updating, set them here.
+        
+     // Update the new employee fields
+        user.setFullName(updatedUser.getFullName());
+        user.setSite(updatedUser.getSite());
+        user.setProject(updatedUser.getProject());
+        user.setJobFunction(updatedUser.getJobFunction());  // Changed from setFunction()
+        user.setAssignmentDate(updatedUser.getAssignmentDate());
+        user.setSeniority(updatedUser.getSeniority());
+        user.setStatus(updatedUser.getStatus());
 
         User savedUser = userRepository.save(user);
         if (auditLogService != null) {
@@ -186,9 +201,6 @@ public class UserService {
         }
     }
 
-    // --------------------------
-    // Existing: Change Password
-    // --------------------------
     public void changePassword(Long userId, String currentPassword, String newPassword) throws Exception {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

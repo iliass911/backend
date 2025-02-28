@@ -63,6 +63,13 @@
     <artifactId>spring-boot-starter-websocket</artifactId>
 </dependency>
 
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml</artifactId>
+    <version>5.2.3</version> <!-- or the version you prefer -->
+</dependency>
+
+
 
         <!-- JWT Dependencies -->
         <dependency>

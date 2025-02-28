@@ -68,7 +68,22 @@ public class AuthController {
         User user = userService.registerUser(registerRequest);
         String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().getName());
         Map<Module, Set<String>> permissions = getPermissionsForRole(user.getRole());
-        return new AuthResponse(token, user.getRole().getName(), user.getId(), permissions);
+        
+        // Enhanced AuthResponse with employee data
+        return new AuthResponse(
+        	    token, 
+        	    user.getRole().getName(), 
+        	    user.getId(), 
+        	    permissions,
+        	    user.getMatricule(),
+        	    user.getFullName(),
+        	    user.getSite(),
+        	    user.getProject(),
+        	    user.getJobFunction(),  // Changed from getFunction()
+        	    user.getAssignmentDate(),
+        	    user.getSeniority(),
+        	    user.getStatus()
+        	);
     }
 
     /**
@@ -83,7 +98,22 @@ public class AuthController {
         User user = userService.authenticateUser(loginRequest);
         String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().getName());
         Map<Module, Set<String>> permissions = getPermissionsForRole(user.getRole());
-        return new AuthResponse(token, user.getRole().getName(), user.getId(), permissions);
+        
+        // Enhanced AuthResponse with employee data
+        return new AuthResponse(
+        	    token, 
+        	    user.getRole().getName(), 
+        	    user.getId(), 
+        	    permissions,
+        	    user.getMatricule(),
+        	    user.getFullName(),
+        	    user.getSite(),
+        	    user.getProject(),
+        	    user.getJobFunction(),  // Changed from getFunction()
+        	    user.getAssignmentDate(),
+        	    user.getSeniority(),
+        	    user.getStatus()
+        	);
     }
 
     /**
@@ -100,4 +130,3 @@ public class AuthController {
         return false;
     }
 }
-
