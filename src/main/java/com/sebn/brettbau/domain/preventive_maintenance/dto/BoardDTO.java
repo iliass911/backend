@@ -1,7 +1,7 @@
 package com.sebn.brettbau.domain.preventive_maintenance.dto;
 
-import java.time.LocalDate;
 import lombok.*;
+import java.time.LocalDate;
 
 /**
  * Data Transfer Object for Board entity.
@@ -13,7 +13,7 @@ import lombok.*;
 @Builder
 public class BoardDTO {
     private Long id;
-    private String boardNumber; // Unique identifier for the board
+    private String boardNumber; // Unique identifier
     private String fbId;
     private String projet;
     private String fbName;
@@ -45,7 +45,7 @@ public class BoardDTO {
     private Long assignedUserId;
     private Double cost;
     private Integer quantity;
-    private String storagePlace;
+    private String storagePlace; // If you keep it
     private LocalDate creationDate;
+    private String status;
 }
-

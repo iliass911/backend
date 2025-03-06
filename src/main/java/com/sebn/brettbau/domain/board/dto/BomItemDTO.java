@@ -28,6 +28,10 @@ public class BomItemDTO {
     private String observation;
     private Double price;
     
+    // New field for motif
+    private String motif;
+    private String comparisonType; // ADDED, REMOVED, MODIFIED
+    
     private Long boardFamilyId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

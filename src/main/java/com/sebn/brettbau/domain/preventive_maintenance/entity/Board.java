@@ -16,24 +16,14 @@ import java.util.Set;
 @Builder
 public class Board {
 
-    // -------------------------------------------------
-    // 1) Primary Key
-    // -------------------------------------------------
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
-    // -------------------------------------------------
-    // 2) Board Number Field
-    // -------------------------------------------------
     @Column(name = "board_number", nullable = false)
     @NotBlank(message = "Board Number is required")
     private String boardNumber;
 
-    // -------------------------------------------------
-    // 3) Other Fields
-    // -------------------------------------------------
     @Column(name = "fb_id")
     private String fbId;
 
@@ -132,9 +122,6 @@ public class Board {
     @Column(name = "status")
     private String status = "PENDING";
 
-    // -------------------------------------------------
-    // 4) Relationships
-    // -------------------------------------------------
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_user_id")
     private User assignedUser;
@@ -145,6 +132,4 @@ public class Board {
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Checklist> checklists;
-
-    // Note: Removed Bom and BoardFamily relationships
 }
