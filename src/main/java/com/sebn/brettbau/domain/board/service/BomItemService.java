@@ -79,6 +79,9 @@ public class BomItemService {
          dto.setQuantityOnBoard(bomItem.getQuantityOnBoard());
          dto.setObservation(bomItem.getObservation());
          dto.setPrice(bomItem.getPrice());
+         dto.setMotif(bomItem.getMotif());
+         dto.setCreatedAt(bomItem.getCreatedAt());
+         dto.setUpdatedAt(bomItem.getUpdatedAt());
          if (bomItem.getBoardFamily() != null) {
             dto.setBoardFamilyId(bomItem.getBoardFamily().getId());
          }
@@ -96,6 +99,7 @@ public class BomItemService {
          bomItem.setQuantityOnBoard(dto.getQuantityOnBoard());
          bomItem.setObservation(dto.getObservation());
          bomItem.setPrice(dto.getPrice());
+         bomItem.setMotif(dto.getMotif());
          // Look up and assign the BoardFamily if boardFamilyId is provided.
          if (dto.getBoardFamilyId() != null) {
              BoardFamily boardFamily = boardFamilyRepository.findById(dto.getBoardFamilyId())
@@ -115,6 +119,7 @@ public class BomItemService {
          entity.setQuantityOnBoard(dto.getQuantityOnBoard());
          entity.setObservation(dto.getObservation());
          entity.setPrice(dto.getPrice());
+         entity.setMotif(dto.getMotif());
          // Optionally update the BoardFamily association if boardFamilyId is provided.
          if (dto.getBoardFamilyId() != null) {
              BoardFamily boardFamily = boardFamilyRepository.findById(dto.getBoardFamilyId())

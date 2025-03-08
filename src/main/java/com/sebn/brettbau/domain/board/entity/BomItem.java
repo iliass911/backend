@@ -43,6 +43,9 @@ public class BomItem {
     private String observation;
     private Double price;
     
+    @Column(name = "motif")
+    private String motif;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

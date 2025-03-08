@@ -22,7 +22,7 @@ public class BomComparisonService {
 
     @Transactional(readOnly = true)
     public List<BomComparisonItemDTO> compareBomItems(Long family1Id, Long family2Id) {
-        // Use the fetch join method to load BOM items eagerly
+        // Load BOM items eagerly for both families
         BoardFamily family1 = boardFamilyRepository.findByIdWithBomItems(family1Id);
         if (family1 == null) {
             throw new ResourceNotFoundException("Board family not found: " + family1Id);
@@ -32,7 +32,7 @@ public class BomComparisonService {
             throw new ResourceNotFoundException("Board family not found: " + family2Id);
         }
 
-        // Convert BOM items from each family to DTOs
+        // Convert BOM items to DTOs
         List<BomItemDTO> bomList1 = family1.getBomItems().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -40,7 +40,7 @@ public class BomComparisonService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
 
-        // Create multimap-like structures to handle duplicate matchcodes
+        // Group items by identMatchcode
         Map<String, List<BomItemDTO>> map1 = bomList1.stream()
                 .collect(Collectors.groupingBy(BomItemDTO::getIdentMatchcode));
         Map<String, List<BomItemDTO>> map2 = bomList2.stream()
@@ -48,10 +48,9 @@ public class BomComparisonService {
 
         List<BomComparisonItemDTO> comparisons = new ArrayList<>();
 
-        // Process items added in family2
+        // Process items added in family2 (matchcode exists only in family2)
         for (String matchcode : map2.keySet()) {
             if (!map1.containsKey(matchcode)) {
-                // All items with this matchcode in family2 are new
                 for (BomItemDTO item2 : map2.get(matchcode)) {
                     BomComparisonItemDTO dto = new BomComparisonItemDTO();
                     dto.setItem1(null);
@@ -62,10 +61,9 @@ public class BomComparisonService {
             }
         }
 
-        // Process items removed from family2
+        // Process items removed from family2 (matchcode exists only in family1)
         for (String matchcode : map1.keySet()) {
             if (!map2.containsKey(matchcode)) {
-                // All items with this matchcode in family1 are removed
                 for (BomItemDTO item1 : map1.get(matchcode)) {
                     BomComparisonItemDTO dto = new BomComparisonItemDTO();
                     dto.setItem1(item1);
@@ -76,31 +74,43 @@ public class BomComparisonService {
             }
         }
 
-        // Process modified items
+        // Process items present in both families
         for (String matchcode : map1.keySet()) {
             if (map2.containsKey(matchcode)) {
-                List<BomItemDTO> items1 = map1.get(matchcode);
-                List<BomItemDTO> items2 = map2.get(matchcode);
+                List<BomItemDTO> items1 = new ArrayList<>(map1.get(matchcode));
+                List<BomItemDTO> items2 = new ArrayList<>(map2.get(matchcode));
 
-                // Compare each item from family1 with the best matching item from family2
+                // For each item in family1, find the best match in family2
                 for (BomItemDTO item1 : items1) {
                     BomItemDTO bestMatch = findBestMatch(item1, items2);
                     if (bestMatch != null) {
+                        // Determine changed fields (ignoring motif in item1)
                         List<String> changedFields = findChangedFields(item1, bestMatch);
-                        if (!changedFields.isEmpty()) {
+                        // Default comparison type is "MODIFIED"
+                        String comparisonType = "MODIFIED";
+                        // Only consider the motif of the after BOM item (item2)
+                        if (bestMatch.getMotif() != null) {
+                            String motifLower = bestMatch.getMotif().toLowerCase();
+                            if (motifLower.equals("removed")) {
+                                comparisonType = "REMOVED";
+                            } else if (motifLower.equals("added")) {
+                                comparisonType = "ADDED";
+                            }
+                        }
+                        // Only record as modified if there are actual differences (ignoring motif)
+                        if (!changedFields.isEmpty() || !comparisonType.equals("MODIFIED")) {
                             BomComparisonItemDTO dto = new BomComparisonItemDTO();
                             dto.setItem1(item1);
                             dto.setItem2(bestMatch);
-                            dto.setComparisonType("MODIFIED");
+                            dto.setComparisonType(comparisonType);
                             dto.setModifiedFields(changedFields);
                             comparisons.add(dto);
                         }
-                        // Remove the matched item to avoid duplicate comparisons
+                        // Remove the matched candidate to avoid duplicate comparisons
                         items2.remove(bestMatch);
                     }
                 }
-
-                // Any remaining items in items2 are considered as additions
+                // Any remaining items in items2 are treated as additions.
                 for (BomItemDTO unmatchedItem2 : items2) {
                     BomComparisonItemDTO dto = new BomComparisonItemDTO();
                     dto.setItem1(null);
@@ -118,8 +128,7 @@ public class BomComparisonService {
         if (candidates.isEmpty()) {
             return null;
         }
-
-        // Find the item with the most matching fields
+        // Find the candidate with the highest number of matching fields
         return candidates.stream()
                 .max(Comparator.comparingInt(candidate -> countMatchingFields(source, candidate)))
                 .orElse(candidates.get(0));
@@ -135,6 +144,7 @@ public class BomComparisonService {
         if (Objects.equals(item1.getQuantityOnBoard(), item2.getQuantityOnBoard())) matches++;
         if (Objects.equals(item1.getObservation(), item2.getObservation())) matches++;
         if (Objects.equals(item1.getPrice(), item2.getPrice())) matches++;
+        // Do NOT compare motif from the before family.
         return matches;
     }
 
@@ -164,6 +174,7 @@ public class BomComparisonService {
         if (!Objects.equals(item1.getPrice(), item2.getPrice())) {
             changedFields.add("price");
         }
+        // Do not add motif difference since we ignore the before motif.
         return changedFields;
     }
 
@@ -180,6 +191,9 @@ public class BomComparisonService {
         dto.setQuantityOnBoard(bomItem.getQuantityOnBoard());
         dto.setObservation(bomItem.getObservation());
         dto.setPrice(bomItem.getPrice());
+        dto.setMotif(bomItem.getMotif());
+        dto.setCreatedAt(bomItem.getCreatedAt());
+        dto.setUpdatedAt(bomItem.getUpdatedAt());
         return dto;
     }
 }

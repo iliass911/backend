@@ -42,4 +42,7 @@ public class InventoryItemDTO {
     // New fields for stock status
     private boolean lowStock;
     private boolean overStock;
+    
+    // Transient field for update reason
+    private String reason;
 }

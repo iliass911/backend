@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.40, for Win64 (x86_64)
+-- MySQL dump 10.13 Distrib 8.0.40, for Win64 (x86_64)
 --
--- Host: localhost    Database: sebn_ma_bb
+-- Host: localhost Database: sebn_ma_bb
 -- ------------------------------------------------------
--- Server version	8.0.40
+-- Server version 8.0.40
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -16,32 +16,32 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `inventory_items`
+-- Table structure for table inventory_items
 --
 
-DROP TABLE IF EXISTS `inventory_items`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
+DROP TABLE IF EXISTS inventory_items;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `inventory_items` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `place` varchar(255) DEFAULT NULL,
-  `price` double DEFAULT NULL,
-  `quantity` int DEFAULT NULL,
-  `ref_code` varchar(255) NOT NULL,
-  `sezam_number` varchar(255) DEFAULT NULL,
-  `site` varchar(255) NOT NULL,
-  `type` varchar(255) DEFAULT NULL,
-  `unit` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+CREATE TABLE inventory_items (
+id bigint NOT NULL AUTO_INCREMENT,
+place varchar(255) DEFAULT NULL,
+price double DEFAULT NULL,
+quantity int DEFAULT NULL,
+ref_code varchar(255) NOT NULL,
+sezam_number varchar(255) DEFAULT NULL,
+site varchar(255) NOT NULL,
+type varchar(255) DEFAULT NULL,
+unit varchar(255) DEFAULT NULL,
+PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
 --
--- Dumping data for table `inventory_items`
+-- Dumping data for table inventory_items
 --
 
-LOCK TABLES `inventory_items` WRITE;
-/*!40000 ALTER TABLE `inventory_items` DISABLE KEYS */;
-/*!40000 ALTER TABLE `inventory_items` ENABLE KEYS */;
+LOCK TABLES inventory_items WRITE;
+/*!40000 ALTER TABLE inventory_items DISABLE KEYS */;
+/*!40000 ALTER TABLE inventory_items ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

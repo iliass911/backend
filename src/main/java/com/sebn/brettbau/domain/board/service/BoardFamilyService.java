@@ -91,6 +91,7 @@ public class BoardFamilyService {
                 newItem.setQuantityOnBoard(item.getQuantityOnBoard());
                 newItem.setObservation(item.getObservation());
                 newItem.setPrice(item.getPrice());
+                newItem.setMotif(item.getMotif());
                 return newItem;
             })
             .collect(Collectors.toList());
@@ -152,7 +153,8 @@ public class BoardFamilyService {
                Objects.equals(item1.getMissingOnBoard(), item2.getMissingOnBoard()) &&
                Objects.equals(item1.getQuantityOnBoard(), item2.getQuantityOnBoard()) &&
                Objects.equals(item1.getObservation(), item2.getObservation()) &&
-               Objects.equals(item1.getPrice(), item2.getPrice());
+               Objects.equals(item1.getPrice(), item2.getPrice()) &&
+               Objects.equals(item1.getMotif(), item2.getMotif());
     }
 
     private BomComparisonItemDTO createComparisonItem(BomItem item1, BomItem item2, String type) {
@@ -186,6 +188,8 @@ public class BoardFamilyService {
             modifiedFields.add("observation");
         if (!Objects.equals(item1.getPrice(), item2.getPrice()))
             modifiedFields.add("price");
+        if (!Objects.equals(item1.getMotif(), item2.getMotif()))
+            modifiedFields.add("motif");
         return modifiedFields;
     }
 
@@ -226,6 +230,7 @@ public class BoardFamilyService {
         dto.setQuantityOnBoard(entity.getQuantityOnBoard());
         dto.setObservation(entity.getObservation());
         dto.setPrice(entity.getPrice());
+        dto.setMotif(entity.getMotif());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
@@ -276,5 +281,6 @@ public class BoardFamilyService {
         entity.setQuantityOnBoard(dto.getQuantityOnBoard());
         entity.setObservation(dto.getObservation());
         entity.setPrice(dto.getPrice());
+        entity.setMotif(dto.getMotif());
     }
 }

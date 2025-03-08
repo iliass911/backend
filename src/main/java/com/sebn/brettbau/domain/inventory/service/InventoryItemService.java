@@ -1,4 +1,3 @@
-// src/main/java/com/sebn/brettbau/domain/inventory/service/InventoryItemService.java
 package com.sebn.brettbau.domain.inventory.service;
 
 import com.sebn.brettbau.domain.audit.service.AuditLogService;
@@ -34,6 +33,7 @@ public class InventoryItemService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final UserService userService;
+    private final InventoryMovementService movementService;
 
     @Transactional
     public InventoryItemDTO createItem(InventoryItemDTO dto) {
@@ -41,6 +41,14 @@ public class InventoryItemService {
             validateQuantityLevels(dto);
             InventoryItem entity = InventoryItemMapper.toEntity(dto);
             InventoryItem saved = repository.save(entity);
+
+            // Record initial stock movement
+            movementService.recordMovement(
+                saved,
+                0, // Previous quantity (0 for new items)
+                saved.getQuantity(),
+                "Initial creation"
+            );
 
             checkStockLevels(saved);
 
@@ -117,6 +125,9 @@ public class InventoryItemService {
 
             String oldDetails = String.format("RefCode: %s, Quantity: %d, Site: %s",
                 entity.getRefCode(), entity.getQuantity(), entity.getSite());
+                
+            // Track previous quantity for movement history
+            int previousQuantity = entity.getQuantity();
 
             // Update fields
             entity.setRefCode(dto.getRefCode());
@@ -131,6 +142,21 @@ public class InventoryItemService {
             entity.setSezamNumber(dto.getSezamNumber());
 
             InventoryItem updated = repository.save(entity);
+            
+            // Record the quantity change if it changed
+            if (previousQuantity != updated.getQuantity()) {
+                String reason = dto.getReason();
+                if (reason == null || reason.isEmpty()) {
+                    reason = "Manual update";
+                }
+                
+                movementService.recordMovement(
+                    updated,
+                    previousQuantity,
+                    updated.getQuantity(),
+                    reason
+                );
+            }
 
             checkStockLevels(updated);
 
@@ -148,6 +174,49 @@ public class InventoryItemService {
         } catch (Exception e) {
             logger.error("Error updating inventory item", e);
             throw new RuntimeException("Failed to update inventory item: " + e.getMessage());
+        }
+    }
+    
+    @Transactional
+    public InventoryItemDTO updateQuantity(Long id, int newQuantity, String reason) {
+        try {
+            InventoryItem entity = repository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found with id: " + id));
+            
+            int previousQuantity = entity.getQuantity();
+            
+            // Validate and update the quantity
+            if (newQuantity < 0) {
+                throw new IllegalArgumentException("Quantity cannot be negative");
+            }
+            
+            entity.setQuantity(newQuantity);
+            InventoryItem updated = repository.save(entity);
+            
+            // Record movement
+            movementService.recordMovement(
+                updated,
+                previousQuantity,
+                newQuantity,
+                reason
+            );
+            
+            checkStockLevels(updated);
+            
+            User currentUser = userService.getCurrentUser();
+            auditLogService.logEvent(
+                currentUser,
+                "INVENTORY_QUANTITY_UPDATED",
+                String.format("Inventory item %s quantity changed from %d to %d. Reason: %s",
+                    updated.getRefCode(), previousQuantity, newQuantity, reason),
+                "INVENTORY",
+                updated.getId()
+            );
+            
+            return InventoryItemMapper.toDTO(updated);
+        } catch (Exception e) {
+            logger.error("Error updating inventory quantity", e);
+            throw new RuntimeException("Failed to update inventory quantity: " + e.getMessage());
         }
     }
 
