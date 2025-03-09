@@ -60,15 +60,14 @@ public class ChatService {
             log.debug("Creating message for user: {}", currentUser.getUsername());
             log.debug("Message content: {}", request.getContent());
 
-            // Handle @everyone mention
+            // Handle @everyone mention: no individual mention records, only notifications.
             if (request.isEveryoneMention()) {
                 if (!roleService.roleHasPermission(currentUser.getRole(), Module.CHAT, PermissionType.DELETE)) {
                     throw new AccessDeniedException("Only users with delete permission can mention @everyone");
                 }
-                mentionedUsers.addAll(userService.getAllUsers());
-                log.debug("@everyone mention - added {} users", mentionedUsers.size());
+                log.debug("@everyone mention activated");
             } 
-            // Handle individual mentions
+            // Handle individual mentions if not @everyone
             else if (request.getMentionedUsernames() != null && !request.getMentionedUsernames().isEmpty()) {
                 for (String username : request.getMentionedUsernames()) {
                     try {
@@ -82,22 +81,22 @@ public class ChatService {
                 }
             }
 
-            // Create initial message
+            // Create the initial chat message
             ChatMessage message = ChatMessage.builder()
                     .content(request.getContent())
                     .sender(currentUser)
                     .createdAt(LocalDateTime.now())
                     .isEveryoneMention(request.isEveryoneMention())
+                    .mentions(new HashSet<>())  // initialize empty set
+                    .hasAttachment(false)
                     .build();
 
-            // Save initial message
             final ChatMessage savedMessage = chatMessageRepository.save(message);
             log.debug("Saved initial message with ID: {}", savedMessage.getId());
 
-            // Handle mentions if present
-            if (!mentionedUsers.isEmpty()) {
+            // For individual mentions, create mention records and notifications.
+            if (!request.isEveryoneMention() && !mentionedUsers.isEmpty()) {
                 try {
-                    // Create mentions set
                     Set<ChatMention> mentions = mentionedUsers.stream()
                             .filter(user -> !user.getId().equals(currentUser.getId()))
                             .map(user -> ChatMention.builder()
@@ -105,23 +104,22 @@ public class ChatService {
                                     .mentionedUser(user)
                                     .build())
                             .collect(Collectors.toSet());
-
-                    // Update message with mentions
                     savedMessage.setMentions(mentions);
                     final ChatMessage messageWithMentions = chatMessageRepository.save(savedMessage);
-                    log.debug("Added {} mentions to message", mentions.size());
-
-                    // Create notifications
+                    log.debug("Added {} mention records to message", mentions.size());
                     createMentionNotifications(messageWithMentions, mentionedUsers);
-
                     return mapToDTO(messageWithMentions);
                 } catch (Exception e) {
                     log.error("Error processing mentions: {}", e.getMessage());
-                    // If mentions fail, return the original message
                     return mapToDTO(savedMessage);
                 }
+            } 
+            // For @everyone, send notifications to all users except the sender.
+            else if (request.isEveryoneMention()) {
+                Set<User> allUsers = new HashSet<>(userService.getAllUsers());
+                allUsers.removeIf(user -> user.getId().equals(currentUser.getId()));
+                createMentionNotifications(savedMessage, allUsers);
             }
-
             return mapToDTO(savedMessage);
         } catch (Exception e) {
             log.error("Error creating message: {}", e.getMessage());
@@ -181,7 +179,6 @@ public class ChatService {
             dto.setId(message.getId());
             dto.setContent(message.getContent());
             
-            // Handle lazy loading of sender
             Hibernate.initialize(message.getSender());
             dto.setSenderUsername(message.getSender().getUsername());
             dto.setSenderRole(message.getSender().getRole().getName());
@@ -189,15 +186,21 @@ public class ChatService {
             dto.setCreatedAt(message.getCreatedAt());
             dto.setUpdatedAt(message.getUpdatedAt());
             dto.setEveryoneMention(message.isEveryoneMention());
+            dto.setHasAttachment(message.isHasAttachment());
+            dto.setAttachmentUrl(message.getAttachmentUrl());
+            dto.setAttachmentType(message.getAttachmentType());
+            dto.setAttachmentName(message.getAttachmentName());
 
-            // Handle lazy loading of mentions
-            Hibernate.initialize(message.getMentions());
-            Set<String> mentionedUsernames = message.getMentions().stream()
-                    .map(mention -> {
-                        Hibernate.initialize(mention.getMentionedUser());
-                        return mention.getMentionedUser().getUsername();
-                    })
-                    .collect(Collectors.toSet());
+            Set<String> mentionedUsernames = new HashSet<>();
+            if (message.getMentions() != null) {
+                Hibernate.initialize(message.getMentions());
+                mentionedUsernames = message.getMentions().stream()
+                        .map(mention -> {
+                            Hibernate.initialize(mention.getMentionedUser());
+                            return mention.getMentionedUser().getUsername();
+                        })
+                        .collect(Collectors.toSet());
+            }
             dto.setMentionedUsernames(mentionedUsernames);
 
             return dto;
